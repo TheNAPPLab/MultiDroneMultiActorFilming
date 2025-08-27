@@ -214,23 +214,12 @@ function neighbors(
     state::MDPState,
     d::Integer,
 )::Vector{MDPState}
-
     actions = Vector{MDPState}(undef, 0)
-    diff = d ÷ 2 + 1# Search within a square region around the object
-    diff = Int64(diff)
-    grid = model.grid
     uavstate = state.state
-    for x = uavstate.x-diff:uavstate.x+diff
-        for y = uavstate.y-diff:uavstate.y+diff
-            if dist_check(uavstate.x, uavstate.y, x, y, d) && in_bounds(grid, x, y)
-                # TODO Change here
-                if state.depth + 1 <= model.horizon
-                    push!(actions, MDPState(state, UAVState(x, y, ccw(uavstate.heading))))
-                    push!(actions, MDPState(state, UAVState(x, y, cw(uavstate.heading))))
-                    push!(actions, MDPState(state, UAVState(x, y, uavstate.heading)))
-                end
-            end
-        end
+    if state.depth + 1 <= model.horizon
+        push!(actions, MDPState(state, UAVState(uavstate.x, uavstate.y, ccw(uavstate.heading))))
+        push!(actions, MDPState(state, UAVState(uavstate.x, uavstate.y, cw(uavstate.heading))))
+        push!(actions, MDPState(state, UAVState(uavstate.x, uavstate.y, uavstate.heading)))
     end
     actions
 end
