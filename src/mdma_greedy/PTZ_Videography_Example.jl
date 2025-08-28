@@ -10,7 +10,7 @@ starting_states = Dict()
 
 # Modified init_discrete_problem from MDMA_Experiment
 cutoff = 100.0
-sensor = MDMA.ViewConeSensor(pi / 2, cutoff)
+sensor = MDMA.PinholeCameraModel([4.4, 4.4], [1920.0, 1080.0], [6.46, 3.64], 0.0, 0.0, 3.0)
 move_dist = 0
 
 multi_configs = configs_from_file(

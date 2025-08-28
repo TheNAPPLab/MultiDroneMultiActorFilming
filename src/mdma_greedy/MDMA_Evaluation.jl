@@ -110,7 +110,7 @@ function evaluate_solution(
 
     target_trajectories = multi_configs.target_trajectories
     horizon = multi_configs.horizon
-    sensor = MDMA.ViewConeSensor(pi / 2, 1000.)
+    sensor = MDMA.PinholeCameraModel([4.4, 4.4], [1920.0, 1080.0], [6.46, 3.64], 0.0, 0.0, 1000.0)
 
     # Make dataframe
     df = DataFrame(t = 1:horizon)

@@ -340,7 +340,7 @@ function generate_target_trajectories(
 end
 
 @testset "single_robot_planner" begin
-    sensor = ViewConeSensor(pi / 2, 3)
+    sensor = PinholeCameraModel([4.4, 4.4], [1920.0, 1080.0], [6.46, 3.64], 0.0, 0.0, 3.0)
     targets = Vector{Target}(undef, 0)
     push!(targets, Target(1, 2, 0, 1))
     push!(targets, Target(1, 3, 0, 2))

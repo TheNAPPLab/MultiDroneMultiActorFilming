@@ -17,7 +17,7 @@ const CoverageData = Array{Float64,3}
 
 # Single Agent Types
 const State = UAVState
-const Sensor = ViewConeSensor
+const Sensor = PinholeCameraModel
 
 struct MDPState
     state::State

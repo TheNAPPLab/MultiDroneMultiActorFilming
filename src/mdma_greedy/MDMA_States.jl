@@ -18,6 +18,7 @@ export Camera,
 struct ViewConeSensor
     fov::Float64 # Radians representing FOV
     cutoff::Float64 # Max Distance
+    println("ViewConeSensor Used")
 end
 
 # Sensor representing pinhole camera
@@ -36,21 +37,18 @@ struct PinholeCameraModel
         cutoff::Float64,
     )
         # world units to pixel units
-        focal_length[1] = resolution[1] / lens_dim[1] * focal_length[1]
-        focal_length[2] = resolution[2] / lens_dim[2] * focal_length[2]
-        principal_point_offset = resolution / 2
+        fx = resolution[1] / lens_dim[1] * focal_length[1]
+        fy = resolution[2] / lens_dim[2] * focal_length[2]
+        cx = resolution[1] / 2
+        cy = resolution[2] / 2
 
-        intrinsics = [[focal_length[1], 0, 0] [skew, focal_length[2], 0] [
-            principal_point_offset[1],
-            principal_point_offset[2],
-            1,
-        ]] #[[focal_length[1], skew, principal_point_offset[1]] [0, focal_length[2], principal_point_offset[2]] [0, 0, 1]]
+        intrinsics = [[fx, skew, cx] [0, fy, cy] [0, 0, 1]]
 
         # One matrix is flipping from world coordinate to drone coordinate
         # then from drone to camera coordinate
         # Drone -> camera redifine the axis
         # Rotation on y axis
-        extrinsics = [[0, sin(pitch), cos(pitch)] [-1, 0, 0] [0, cos(pitch), -sin(pitch)]]
+        extrinsics = [[cos(pitch), 0, sin(pitch)] [0, 1, 0] [-sin(pitch), 0, cos(pitch)]]
 
         # extrinsics = [[0, sin(pitch), cos(pitch)] [-1, 0, 0] [0, cos(pitch), -sin(pitch)]] #[[1, 0, 0] [0, cos(pitch), -sin(pitch)] [0, sin(pitch), cos(pitch)]]
 
@@ -58,7 +56,8 @@ struct PinholeCameraModel
         # extrinsics = [[0, 0, 1] [-1, 0, 0] [0, 1, 0]] #[[1, 0, 0] [0, cos(pitch), -sin(pitch)] [0, sin(pitch), cos(pitch)]]
         # extrinsics = [[1, 0, 0] [0, cos(pitch), -sin(pitch)] [0, sin(pitch), cos(pitch)]]
 
-        fov = 2 * atan(resolution[1], 2 * focal_length[1])
+        fov = atan(resolution[1], 2 * focal_length[1])
+        println("PinholeCameraModel Used")
         println("Fov: $(fov)")
         return new(intrinsics, extrinsics, resolution, fov, cutoff)
     end
