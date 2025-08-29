@@ -96,7 +96,7 @@ function place_uavs(
     for _ = 1:config.num_robots
         x = radius * cos(theta + config.initial_angle) + centroid[1]
         y = radius * sin(theta + config.initial_angle) + centroid[2]
-        u_state = UAVState(x, y, Symbol(:E))
+        u_state = PTZState(x, y, 0, Symbol(:E), 0, 0)
         state = MDPState(u_state, time, config.horizon)
         push!(output_states, align_nearest(state, targets))
         theta += dtheta
@@ -116,7 +116,7 @@ function align_nearest(state::MDPState, targets::Vector{Target})::MDPState
             angle = absoluteAngle(dx, dy)
         end
     end
-    u_state = UAVState(state.state.x, state.state.y, heading_from_angle(angle))
+    u_state = PTZState(state.state.x, state.state.y, 0, heading_from_angle(angle), 0, 0)
     MDPState(u_state, state.depth, state.horizon)
 end
 

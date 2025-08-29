@@ -60,7 +60,7 @@ end
 
 absoluteAngle(theta::Number) = absoluteAngle(cos(theta), sin(theta))
 
-function detectTarget(dstate::UAVState, astate::Target, sensor::ViewConeSensor)::Bool
+function detectTarget(dstate::PTZState, astate::Target, sensor::ViewConeSensor)::Bool
     dist_sqr = (dstate.x - astate.x)^2 + (dstate.y - astate.y)^2
     # Check if inside the max view distance
     # if dist_sqr > sensor.cutoff^2
@@ -110,7 +110,7 @@ function detectTarget(dstate::UAVState, astate::Target, sensor::ViewConeSensor):
     # end
 end
 
-function detectTarget(dstate::UAVState, astate::Target, camera::PinholeCameraModel)::Bool
+function detectTarget(dstate::PTZState, astate::Target, camera::PinholeCameraModel)::Bool
     rel_target_pos =
         [astate.x; astate.y; target_height] - [dstate.x; dstate.y; drone_height]
     theta = dirAngle(dstate.heading)

@@ -35,7 +35,7 @@ function get_states(width::Int64, height::Int64, horizon::Int64)
         c = i[2] # column
         d = i[3] # direction
         t = i[4] # time
-        states[i] = MDPState(UAVState(c, r, cardinaldir[d]), t, horizon)
+        states[i] = MDPState(PTZState(c, r, 0, cardinaldir[d], 0, 0), t, horizon)
     end
     states
 end
@@ -217,16 +217,16 @@ function neighbors(
     actions = Vector{MDPState}(undef, 0)
     uavstate = state.state
     if state.depth + 1 <= model.horizon
-        push!(actions, MDPState(state, UAVState(uavstate.x, uavstate.y, ccw(uavstate.heading))))
-        push!(actions, MDPState(state, UAVState(uavstate.x, uavstate.y, cw(uavstate.heading))))
-        push!(actions, MDPState(state, UAVState(uavstate.x, uavstate.y, uavstate.heading)))
+        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, 0.0, ccw(uavstate.heading), 0.0, 0.0)))
+        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, 0.0, cw(uavstate.heading), 0.0, 0.0)))
+        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, 0.0, uavstate.heading, 0.0, 0.0)))
     end
     actions
 end
 
-in_bounds(grid::MDMA_Grid, x::Integer, y::Integer) = in_bounds(grid, UAVState(x, y, :N))
+in_bounds(grid::MDMA_Grid, x::Integer, y::Integer) = in_bounds(grid, PTZState(x, y, 0, :N, 0, 0))
 in_bounds(grid::MDMA_Grid, x::AbstractFloat, y::AbstractFloat) =
-in_bounds(grid, UAVState(x, y, :N))
+in_bounds(grid, PTZState(x, y, 0, :N, 0, 0))
 in_bounds(grid::MDMA_Grid, state::MDPState) = in_bounds(grid, state.state)
 function in_bounds(grid::MDMA_Grid, state::State)
     if state.x > 0 && state.x <= grid.width

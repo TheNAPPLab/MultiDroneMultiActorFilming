@@ -21,12 +21,13 @@ multi_configs = configs_from_file(
 multi_configs.sensor = sensor
 
 # Set cameras around the grid
+println("1")
 starting_states[experiment_name] = [
-    MDMA.MDPState(UAVState(15, 2, Symbol(:S)), multi_configs.horizon),
-    MDMA.MDPState(UAVState(2, 15, Symbol(:E)), multi_configs.horizon),
-    MDMA.MDPState(UAVState(28, 15, Symbol(:W)), multi_configs.horizon),
-    MDMA.MDPState(UAVState(6, 28, Symbol(:N)), multi_configs.horizon),
-    MDMA.MDPState(UAVState(24, 28,Symbol(:N)), multi_configs.horizon)
+    MDMA.MDPState(PTZState(15, 2, 0, Symbol(:S), 0, 0), multi_configs.horizon),
+    MDMA.MDPState(PTZState(2, 15, 0, Symbol(:E), 0, 0), multi_configs.horizon),
+    MDMA.MDPState(PTZState(28, 15, 0, Symbol(:W), 0, 0), multi_configs.horizon),
+    MDMA.MDPState(PTZState(6, 28, 0, Symbol(:N), 0, 0), multi_configs.horizon),
+    MDMA.MDPState(PTZState(24, 28, 0, Symbol(:N), 0, 0), multi_configs.horizon)
 ]
 
 robot_states = starting_states[experiment_name]

@@ -9,6 +9,7 @@ export Camera,
     Face,
     rotMatrix,
     UAVState,
+    PTZState,
     drone_height,
     target_height,
     multiply_face_weights
@@ -161,6 +162,22 @@ struct UAVState
 end
 
 UAVState(x::Integer, y::Integer, h::Symbol) = UAVState(Float64(x), Float64(y), h)
+
+# State struct for agents. Used specifically as part of the action space
+struct PTZState
+    x::Float64
+    y::Float64
+    z::Float64
+    heading::Symbol
+    tilt::Float64
+    zoom::Float64
+    function PTZState(x::Float64, y::Float64, z::Float64, heading::Symbol, tilt::Float64, zoom::Float64)
+        heading in cardinaldir || throw(ArgumentError("invalid cardinaldir: $heading"))
+        new(x, y, z, heading, tilt, zoom)
+    end
+end
+
+PTZState(x::Integer, y::Integer, z::Integer, heading::Symbol, tilt::Integer, zoom::Integer) = PTZState(Float64(x), Float64(y), Float64(z), heading, Float64(tilt), Float64(zoom))
 
 mutable struct ViewConeObservation
     n::Int64 # Number of actors detected

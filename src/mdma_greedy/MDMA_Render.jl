@@ -92,7 +92,7 @@ function draw_targets(cr::CairoContext, targs::Vector{Target}, ppm, size, buf)
     end
 end
 
-function draw_state(cr::CairoContext, state::UAVState, model, ppm, fade, cfade, buf)
+function draw_state(cr::CairoContext, state::PTZState, model, ppm, fade, cfade, buf)
     Cairo.save(cr)
     move_to(cr, state.x * ppm + buf * ppm, state.y * ppm + buf * ppm)
     fov = model.sensor.fov

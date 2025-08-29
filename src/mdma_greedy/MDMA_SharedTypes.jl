@@ -16,7 +16,7 @@ export Trajectory, MDPState, State, Sensor, MDMA_Grid, random_state
 const CoverageData = Array{Float64,3}
 
 # Single Agent Types
-const State = UAVState
+const State = PTZState
 const Sensor = PinholeCameraModel
 
 struct MDPState
@@ -53,5 +53,5 @@ function random_state(horizon, grid::MDMA_Grid)::MDPState
     rdir = rand(cardinaldir)
     depth = 1
 
-    MDPState(UAVState(rwidth, rheight, rdir), horizon)
+    MDPState(PTZState(rwidth, rheight, 0, rdir, 0 ,0), horizon)
 end
