@@ -41,7 +41,7 @@ Download the specific julia version in the project folder:
 		- Install the julia packages : julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate();'
 
 If you want to use Blender, install the blender in the same project folder.Also, create a symbolic link for the blender path
-    - create a directory /blender : mkdir -p blender
+    - create a directory /blender : mkdir -p blender (might be already there from the previous version)
     - go the env folder: cd blender
     - download and install the specific version: 
         - wget https://mirror.clarkson.edu/blender/release/Blender4.2/blender-4.2.1-linux-x64.tar.xz
@@ -52,3 +52,24 @@ If you want to use Blender, install the blender in the same project folder.Also,
 Install other dependancies(use sudo if needed):
 apt-get -y install build-essential git subversion cmake libx11-dev libxxf86vm-dev libxcursor-dev libxi-dev libxrandr-dev libxinerama-dev libegl-dev libxrender-dev libsm-dev
 apt-get -y install libwayland-dev wayland-protocols libxkbcommon-dev libdbus-1-dev linux-libc-dev
+
+
+How to run the code:(From the main README):
+
+* `julia`
+* `julia> using MDMA`
+
+To run all the experiments and generate all outputs
+* `julia> conf = ExperimentsConfig("./experiments")`
+* `julia> run_all_experiments(conf)`
+
+ExperimentsConfig can also be provided a list of experiments to run (in the case you do not want to run everything).
+For example, to run only the `cluster` experiment you can do
+* `julia> conf = ExperimentsConfig("./experiments", ["cluster"])`
+
+The repo comes with a set of solutions already in the correct locations. You can also try
+to render all the image outputs, and compute solution evaluations without recomputing solutions.
+* `julia> blender_render_all_experiments(conf)`
+* `julia> evaluate_all_experiments(conf)`
+
+
