@@ -36,13 +36,14 @@ const Trajectory = Vector{MDPState}
 struct MDMA_Grid
     width::Int64
     height::Int64
+    camera_positions::Vector{Tuple{Float64,Float64,Float64}}
     angle_divisions::Int64
     horizon::Int64
-    states::Array{MDPState,4}
+    states::Array{MDPState,3}
 
     # We will precompute some of the large objects that we use frequently
-    function MDMA_Grid(width, height, horizon)
-        x = new(width, height, 8, horizon, get_states(width, height, horizon))
+    function MDMA_Grid(width, height, camera_positions, horizon)
+        x = new(width, height, camera_positions, 8, horizon, get_states(camera_positions, horizon))
         x
     end
 end
@@ -53,5 +54,5 @@ function random_state(horizon, grid::MDMA_Grid)::MDPState
     rdir = rand(cardinaldir)
     depth = 1
 
-    MDPState(PTZState(rwidth, rheight, 0, rdir, 0 ,0), horizon)
+    MDPState(PTZState(rwidth, rheight, 0.0, rdir, 0.0 ,0.0), horizon)
 end

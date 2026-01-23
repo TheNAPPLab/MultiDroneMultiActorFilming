@@ -134,7 +134,7 @@ mutable struct SingleRobotTargetAssignmentProblem <: AbstractSingleRobotProblem
     move_dist::Int64
     assignments::Vector{Bool}
     initial_state::MDPState
-    view_reward_cache::Array{Float64,4}
+    view_reward_cache::Array{Float64,3}
     function SingleRobotTargetAssignmentProblem(
         grid::MDMA_Grid,
         sensor::Camera,
@@ -153,7 +153,7 @@ mutable struct SingleRobotTargetAssignmentProblem <: AbstractSingleRobotProblem
             move_dist,
             assignments,
             initial_state,
-            zeros(Float64, 0, 0, 0, 0)
+            zeros(Float64, 0, 0, 0)
         )
         this.view_reward_cache = initialize_reward_cache_assignment(this)
         this
@@ -180,7 +180,7 @@ function POMDPs.reward(
     reward
 end
 
-function initialize_reward_cache_assignment(this)::Array{Float64, 4}
+function initialize_reward_cache_assignment(this)::Array{Float64, 3}
     states = get_states(this)
 
     map(x -> compute_single_agent_view_reward_assignment(this, x), states)
@@ -191,8 +191,7 @@ function load_cached_reward_assignment(
         model::SingleRobotTargetAssignmentProblem,
         state::MDPState)
 
-    model.view_reward_cache[trunc(Int, state.state.y),
-                            trunc(Int, state.state.x),
+    model.view_reward_cache[findfirst(x -> x == (state.state.x, state.state.y, state.state.z), model.grid.camera_positions),
                             dir_to_index(state.state.heading),
                             state.depth
                            ]

@@ -7,10 +7,12 @@ using MDMA
 
 export configs_from_file, save_solution, load_solution, targets_from_file
 
+
 function configs_from_file(
     filename::String,
     experiment_name::String,
     move_dist::Number,
+    camera_positions::Vector{Tuple{Float64,Float64,Float64}}
 )::MultiDroneMultiActorConfigs
 
     json_string = read(filename, String)
@@ -42,7 +44,7 @@ function configs_from_file(
 
 
     # Making the object
-    grid = MDMA_Grid(Int64(scale["x"]), Int64(scale["y"]), horizon)
+    grid = MDMA_Grid(Int64(scale["x"]), Int64(scale["y"]), camera_positions, horizon)
     fov = robot_fovs[1]
     sensor = PinholeCameraModel([4.4, 4.4], [1920.0, 1080.0], [6.46, 3.64], 0.0, 0.0, sense_dist)
 

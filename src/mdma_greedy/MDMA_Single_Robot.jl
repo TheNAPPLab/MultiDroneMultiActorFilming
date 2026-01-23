@@ -28,19 +28,20 @@ export get_states,
 # TODO Update this
 
 get_states(g::MDMA_Grid) = g.states
-function get_states(width::Int64, height::Int64, horizon::Int64)
-    states = Array{MDPState,4}(undef, width, height, 8, horizon)
+function get_states(camera_positions::Vector{Tuple{Float64,Float64,Float64}}, horizon::Int64)
+    num_cameras = length(camera_positions)
+    states = Array{MDPState,3}(undef, num_cameras, 8, horizon)
     for i in CartesianIndices(states)
-        r = i[1] # row
-        c = i[2] # column
-        d = i[3] # direction
-        t = i[4] # time
-        states[i] = MDPState(PTZState(c, r, 0, cardinaldir[d], 0, 0), t, horizon)
+        camera_id = i[1]
+        d = i[2] # pan
+        t = i[3] # time
+        x, y, z = camera_positions[camera_id]        
+        states[i] = MDPState(PTZState(x, y, z, cardinaldir[d], 0.0, 0.0), t, horizon)
     end
     states
 end
 
-dims(g::MDMA_Grid) = (g.width, g.height, g.angle_divisions, g.horizon)
+dims(g::MDMA_Grid) = (length(g.camera_positions), g.angle_divisions, g.horizon)
 num_states(g::MDMA_Grid) = length(g.states)
 
 # States in grid should not have x or y lower than 1 or more than width/height
@@ -58,7 +59,7 @@ mutable struct SingleRobotMultiTargetViewCoverageProblem <: AbstractSingleRobotP
     coverage_data::CoverageData
     initial_state::MDPState
     # view_reward_cache::Vector{Float64}
-    view_reward_cache::Array{Float64,4}
+    view_reward_cache::Array{Float64,3}
     # Add default height of 7 meters
 
     function SingleRobotMultiTargetViewCoverageProblem(
@@ -79,7 +80,7 @@ mutable struct SingleRobotMultiTargetViewCoverageProblem <: AbstractSingleRobotP
             move_dist,
             coverage_data,
             initial_state,
-            zeros(Float64, 0, 0, 0, 0)
+            zeros(Float64, 0, 0, 0)
         )
 
         this.view_reward_cache = initialize_reward_cache(this)
@@ -90,7 +91,7 @@ get_states(model::SingleRobotMultiTargetViewCoverageProblem) = get_states(model.
 horizon(x::AbstractSingleRobotProblem) = x.horizon
 
 # Cache view rewards for each state
-function initialize_reward_cache(this)::Array{Float64, 4}
+function initialize_reward_cache(this)::Array{Float64, 3}
     states = get_states(this)
 
     map(x -> compute_single_agent_view_reward(this, x), states)
@@ -101,8 +102,7 @@ function load_cached_reward(
         model::SingleRobotMultiTargetViewCoverageProblem,
         state::MDPState)
 
-    model.view_reward_cache[trunc(Int, state.state.y),
-                            trunc(Int, state.state.x),
+    model.view_reward_cache[findfirst(x -> x == (state.state.x, state.state.y, state.state.z), model.grid.camera_positions),
                             dir_to_index(state.state.heading),
                             state.depth
                            ]
@@ -187,15 +187,14 @@ end
 
 function POMDPs.stateindex(model::AbstractSingleRobotProblem, s::MDPState)
     cart = CartesianIndex(
-        Integer(s.state.y),
-        Integer(s.state.x),
+        findfirst(x -> x == (s.state.x, s.state.y, s.state.z), model.grid.camera_positions),
         dir_to_index(s.state.heading),
         (model.horizon + 1) - s.depth,
     )
     # cart = CartesianIndex(s.state.y, s.state.x, dir_to_index(s.state.heading), s.depth)
     grid = model.grid
     d = dims(grid)
-    lin = LinearIndices((1:d[1], 1:d[2], 1:d[3], 1:d[4]))
+    lin = LinearIndices(d)
     return lin[cart]
 end
 
@@ -264,10 +263,6 @@ function POMDPs.reward(
 
     if (action.state.heading == state.state.heading)
         reward += 0.02
-    end
-
-    if (action.state.x == state.state.x) && (action.state.y == state.state.y)
-        reward += 0.01
     end
 
     reward
@@ -346,8 +341,9 @@ end
     push!(targets, Target(1, 3, 0, 2))
     push!(targets, Target(2, 3, 0, 3))
 
+    camera_positions = [(0.0, 0.0, 0.0)]
     horizon = 4
-    grid = MDMA_Grid(20, 20, horizon)
+    grid = MDMA_Grid(20, 20, camera_positions, horizon)
 
     # initial_state = MDPState(UAVState(0,0,:S))
     # traj = generate_target_trajectories(grid, horizon, targets)
