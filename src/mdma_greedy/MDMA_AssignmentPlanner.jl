@@ -224,7 +224,7 @@ function compute_single_agent_view_reward_assignment(
                     distance = (
                         face.pos[1] - mdp_state.state.x,
                         face.pos[2] - mdp_state.state.y,
-                        target_height / 2 - drone_height,
+                        target_height / 2 - mdp_state.state.z,
                     )
                     theta = dirAngle(mdp_state.state.heading)
                     heading = (cos(theta), sin(theta), 0.0)

@@ -127,7 +127,7 @@ function load_solution(filename)
             depth = states["depth"]
             horizon = states["horizon"]
             state =
-                PTZState(state_dict["x"], state_dict["y"], 0, Symbol(state_dict["heading"]), 0, 0)
+                PTZState(state_dict["x"], state_dict["y"], state_dict["z"], Symbol(state_dict["heading"]), 0, 0)
             push!(robot_states, MDPState(state, depth, horizon))
         end
         push!(elements, (robot_id, robot_states))

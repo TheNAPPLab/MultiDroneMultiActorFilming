@@ -116,7 +116,7 @@ function align_nearest(state::MDPState, targets::Vector{Target})::MDPState
             angle = absoluteAngle(dx, dy)
         end
     end
-    u_state = PTZState(state.state.x, state.state.y, 0.0, heading_from_angle(angle), 0.0, 0.0)
+    u_state = PTZState(state.state.x, state.state.y, state.state.z, heading_from_angle(angle), 0.0, 0.0)
     MDPState(u_state, state.depth, state.horizon)
 end
 

@@ -136,7 +136,7 @@ function compute_single_agent_view_reward(
                 distance = (
                     face.pos[1] - mdp_state.state.x,
                     face.pos[2] - mdp_state.state.y,
-                    target_height / 2 - drone_height,
+                    target_height / 2 - mdp_state.state.z,
                 )
                 theta = mdp_state.state.pan
                 pan = (cos(theta), sin(theta), 0.0)
@@ -216,9 +216,9 @@ function neighbors(
     actions = Vector{MDPState}(undef, 0)
     uavstate = state.state
     if state.depth + 1 <= model.horizon
-        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, 0.0, ccw(uavstate.pan), 0.0, 0.0)))
-        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, 0.0, cw(uavstate.pan), 0.0, 0.0)))
-        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, 0.0, uavstate.pan, 0.0, 0.0)))
+        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, uavstate.z, ccw(uavstate.pan), 0.0, 0.0)))
+        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, uavstate.z, cw(uavstate.pan), 0.0, 0.0)))
+        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, uavstate.z, uavstate.pan, 0.0, 0.0)))
     end
     actions
 end

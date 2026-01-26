@@ -11,11 +11,11 @@ pan_divisions = 8 # Number of pan angles to use
 sensor = MDMA.PinholeCameraModel([4.4, 4.4], [1920.0, 1080.0], [6.46, 3.64], 0.0, 0.0, 3.0)
 move_dist = 0
 camera_positions = [
-    (15.0, 2.0, 0.0),
-    (2.0, 15.0, 0.0),
-    (28.0, 15.0, 0.0),
-    (6.0, 28.0, 0.0),
-    (24.0, 28.0, 0.0)
+    (15.0, 2.0, 5.0),
+    (2.0, 15.0, 5.0),
+    (28.0, 15.0, 5.0),
+    (6.0, 28.0, 5.0),
+    (24.0, 28.0, 5.0)
 ]
 
 # Set up and run GreedyPlanner
@@ -28,11 +28,11 @@ multi_configs = configs_from_file(
 )
 multi_configs.sensor = sensor
 starting_states[experiment_name] = [
-    MDMA.MDPState(PTZState(15.0, 2.0, 0.0, 0.0, 0.0, 0.0), multi_configs.horizon),
-    MDMA.MDPState(PTZState(2.0, 15.0, 0.0, 0.0, 0.0, 0.0), multi_configs.horizon),
-    MDMA.MDPState(PTZState(28.0, 15.0, 0.0, 0.0, 0.0, 0.0), multi_configs.horizon),
-    MDMA.MDPState(PTZState(6.0, 28.0, 0.0, 0.0, 0.0, 0.0), multi_configs.horizon),
-    MDMA.MDPState(PTZState(24.0, 28.0, 0.0, 0.0, 0.0, 0.0), multi_configs.horizon)
+    MDMA.MDPState(PTZState(15.0, 2.0, 5.0, 0.0, 0.0, 0.0), multi_configs.horizon),
+    MDMA.MDPState(PTZState(2.0, 15.0, 5.0, 0.0, 0.0, 0.0), multi_configs.horizon),
+    MDMA.MDPState(PTZState(28.0, 15.0, 5.0, 0.0, 0.0, 0.0), multi_configs.horizon),
+    MDMA.MDPState(PTZState(6.0, 28.0, 5.0, 0.0, 0.0, 0.0), multi_configs.horizon),
+    MDMA.MDPState(PTZState(24.0, 28.0, 5.0, 0.0, 0.0, 0.0), multi_configs.horizon)
 ]
 robot_states = starting_states[experiment_name]
 problem = MDMA.MultiRobotTargetCoverageProblem(robot_states, multi_configs)

@@ -144,7 +144,7 @@ function evaluate_solution(
                             distance = (
                                 face.pos[1] - state.state.x,
                                 face.pos[2] - state.state.y,
-                                target_height / 2 - drone_height,
+                                target_height / 2 - state.state.z,
                             )
                             theta = state.state.pan
                             look_direction = (cos(theta), sin(theta), 0.0)

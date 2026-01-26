@@ -184,7 +184,7 @@ function compute_prior_coverage(
                         distance = (
                             face.pos[1] - robot_state.state.x,
                             face.pos[2] - robot_state.state.y,
-                            target_height / 2 - drone_height,
+                            target_height / 2 - robot_state.state.z,
                         )
                         # theta = dirAngle(robot_state.state.pan)
                         theta = robot_state.state.pan

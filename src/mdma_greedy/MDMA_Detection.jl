@@ -132,7 +132,7 @@ end
 
 function detectTarget(dstate::PTZState, astate::Target, camera::PinholeCameraModel)::Bool
     rel_target_pos =
-        [astate.x; astate.y; target_height] - [dstate.x; dstate.y; drone_height]
+        [astate.x; astate.y; target_height] - [dstate.x; dstate.y; dstate.z]
     theta = dstate.pan
     if dot([cos(theta); sin(theta); 0], rel_target_pos) >= 0
         image_coord = camera.intrinsics * camera.extrinsics * rel_target_pos
