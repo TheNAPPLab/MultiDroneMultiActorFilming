@@ -97,17 +97,17 @@ function draw_state(cr::CairoContext, state::PTZState, model, ppm, fade, cfade, 
     move_to(cr, state.x * ppm + buf * ppm, state.y * ppm + buf * ppm)
     fov = model.sensor.fov
     radius = model.sensor.cutoff
-    draw_arc(cr, radius, state.x, state.y, state.heading, fov, ppm, fade, cfade, buf)
+    draw_arc(cr, radius, state.x, state.y, state.pan, fov, ppm, fade, cfade, buf)
     restore(cr)
 end
 
-function draw_arc(cr::CairoContext, radius, x, y, heading, fov, ppm, fade, cfade, buf)
+function draw_arc(cr::CairoContext, radius, x, y, pan, fov, ppm, fade, cfade, buf)
     ## original example, following here
     xc = x * ppm + buf * ppm
     yc = y * ppm + buf * ppm
     radius = radius * ppm
-    angle1 = dirAngle(heading) + (-fov / 2)  # angles are specified
-    angle2 = dirAngle(heading) + (fov / 2)  # in radians
+    angle1 = pan + (-fov / 2)  # angles are specified
+    angle2 = pan + (fov / 2)  # in radians
 
     #     set_source_rgba(cr, 0, 0, 0, fade);
     set_source_rgba(cr, (cfade), (1 - cfade) * 0.5, (1 - cfade) * 1.1, fade)

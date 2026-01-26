@@ -28,20 +28,20 @@ export get_states,
 # TODO Update this
 
 get_states(g::MDMA_Grid) = g.states
-function get_states(camera_positions::Vector{Tuple{Float64,Float64,Float64}}, horizon::Int64)
+function get_states(camera_positions::Vector{Tuple{Float64,Float64,Float64}}, pan_divisions::Int64, horizon::Int64)
     num_cameras = length(camera_positions)
-    states = Array{MDPState,3}(undef, num_cameras, 8, horizon)
+    states = Array{MDPState,3}(undef, num_cameras, pan_divisions, horizon)
     for i in CartesianIndices(states)
         camera_id = i[1]
-        d = i[2] # pan
+        p = i[2] # pan
         t = i[3] # time
         x, y, z = camera_positions[camera_id]        
-        states[i] = MDPState(PTZState(x, y, z, cardinaldir[d], 0.0, 0.0), t, horizon)
+        states[i] = MDPState(PTZState(x, y, z, pan_angles[p], 0.0, 0.0), t, horizon)
     end
     states
 end
 
-dims(g::MDMA_Grid) = (length(g.camera_positions), g.angle_divisions, g.horizon)
+dims(g::MDMA_Grid) = (length(g.camera_positions), g.pan_divisions, g.horizon)
 num_states(g::MDMA_Grid) = length(g.states)
 
 # States in grid should not have x or y lower than 1 or more than width/height
@@ -103,7 +103,7 @@ function load_cached_reward(
         state::MDPState)
 
     model.view_reward_cache[findfirst(x -> x == (state.state.x, state.state.y, state.state.z), model.grid.camera_positions),
-                            dir_to_index(state.state.heading),
+                            dir_to_index(state.state.pan),
                             state.depth
                            ]
     # model.view_reward_cache[stateindex(state)]
@@ -138,12 +138,12 @@ function compute_single_agent_view_reward(
                     face.pos[2] - mdp_state.state.y,
                     target_height / 2 - drone_height,
                 )
-                theta = dirAngle(mdp_state.state.heading)
-                heading = (cos(theta), sin(theta), 0.0)
+                theta = mdp_state.state.pan
+                pan = (cos(theta), sin(theta), 0.0)
 
                 # Includes the sum
                 cumulative_face_coverage = prior_face_coverage +
-                    compute_camera_coverage(face, heading, distance)
+                    compute_camera_coverage(face, pan, distance)
 
 
                 # Compute marginal view reward for this face
@@ -188,7 +188,7 @@ end
 function POMDPs.stateindex(model::AbstractSingleRobotProblem, s::MDPState)
     cart = CartesianIndex(
         findfirst(x -> x == (s.state.x, s.state.y, s.state.z), model.grid.camera_positions),
-        dir_to_index(s.state.heading),
+        dir_to_index(s.state.pan),
         (model.horizon + 1) - s.depth,
     )
     # cart = CartesianIndex(s.state.y, s.state.x, dir_to_index(s.state.heading), s.depth)
@@ -216,9 +216,9 @@ function neighbors(
     actions = Vector{MDPState}(undef, 0)
     uavstate = state.state
     if state.depth + 1 <= model.horizon
-        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, 0.0, ccw(uavstate.heading), 0.0, 0.0)))
-        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, 0.0, cw(uavstate.heading), 0.0, 0.0)))
-        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, 0.0, uavstate.heading, 0.0, 0.0)))
+        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, 0.0, ccw(uavstate.pan), 0.0, 0.0)))
+        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, 0.0, cw(uavstate.pan), 0.0, 0.0)))
+        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, 0.0, uavstate.pan, 0.0, 0.0)))
     end
     actions
 end
@@ -261,7 +261,7 @@ function POMDPs.reward(
 
     reward = load_cached_reward(model, action)
 
-    if (action.state.heading == state.state.heading)
+    if (action.state.pan == state.state.pan)
         reward += 0.02
     end
 
@@ -343,7 +343,7 @@ end
 
     camera_positions = [(0.0, 0.0, 0.0)]
     horizon = 4
-    grid = MDMA_Grid(20, 20, camera_positions, horizon)
+    grid = MDMA_Grid(20, 20, camera_positions, 8, horizon)
 
     # initial_state = MDPState(UAVState(0,0,:S))
     # traj = generate_target_trajectories(grid, horizon, targets)

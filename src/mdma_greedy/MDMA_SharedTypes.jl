@@ -37,13 +37,14 @@ struct MDMA_Grid
     width::Int64
     height::Int64
     camera_positions::Vector{Tuple{Float64,Float64,Float64}}
-    angle_divisions::Int64
+    pan_divisions::Int64
     horizon::Int64
     states::Array{MDPState,3}
 
     # We will precompute some of the large objects that we use frequently
-    function MDMA_Grid(width, height, camera_positions, horizon)
-        x = new(width, height, camera_positions, 8, horizon, get_states(camera_positions, horizon))
+    function MDMA_Grid(width, height, camera_positions, pan_divisions, horizon)
+        discretize_pan(pan_divisions)
+        x = new(width, height, camera_positions, pan_divisions, horizon, get_states(camera_positions, pan_divisions, horizon))
         x
     end
 end

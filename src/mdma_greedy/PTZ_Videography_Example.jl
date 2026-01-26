@@ -5,6 +5,7 @@ using SubmodularMaximization
 experiment_name = "split_and_join"
 path_to_experiments = "./experiments"
 starting_states = Dict()
+pan_divisions = 8 # Number of pan angles to use
 
 # Modified init_discrete_problem from MDMA_Experiment
 sensor = MDMA.PinholeCameraModel([4.4, 4.4], [1920.0, 1080.0], [6.46, 3.64], 0.0, 0.0, 3.0)
@@ -22,15 +23,16 @@ multi_configs = configs_from_file(
     "$(path_to_experiments)/$(experiment_name)/$(experiment_name)_data.json",
     experiment_name,
     move_dist,
-    camera_positions
+    camera_positions,
+    pan_divisions
 )
 multi_configs.sensor = sensor
 starting_states[experiment_name] = [
-    MDMA.MDPState(PTZState(15.0, 2.0, 0.0, Symbol(:S), 0.0, 0.0), multi_configs.horizon),
-    MDMA.MDPState(PTZState(2.0, 15.0, 0.0, Symbol(:E), 0.0, 0.0), multi_configs.horizon),
-    MDMA.MDPState(PTZState(28.0, 15.0, 0.0, Symbol(:W), 0.0, 0.0), multi_configs.horizon),
-    MDMA.MDPState(PTZState(6.0, 28.0, 0.0, Symbol(:N), 0.0, 0.0), multi_configs.horizon),
-    MDMA.MDPState(PTZState(24.0, 28.0, 0.0, Symbol(:N), 0.0, 0.0), multi_configs.horizon)
+    MDMA.MDPState(PTZState(15.0, 2.0, 0.0, 0.0, 0.0, 0.0), multi_configs.horizon),
+    MDMA.MDPState(PTZState(2.0, 15.0, 0.0, 0.0, 0.0, 0.0), multi_configs.horizon),
+    MDMA.MDPState(PTZState(28.0, 15.0, 0.0, 0.0, 0.0, 0.0), multi_configs.horizon),
+    MDMA.MDPState(PTZState(6.0, 28.0, 0.0, 0.0, 0.0, 0.0), multi_configs.horizon),
+    MDMA.MDPState(PTZState(24.0, 28.0, 0.0, 0.0, 0.0, 0.0), multi_configs.horizon)
 ]
 robot_states = starting_states[experiment_name]
 problem = MDMA.MultiRobotTargetCoverageProblem(robot_states, multi_configs)

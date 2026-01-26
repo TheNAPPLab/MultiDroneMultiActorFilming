@@ -186,11 +186,12 @@ function compute_prior_coverage(
                             face.pos[2] - robot_state.state.y,
                             target_height / 2 - drone_height,
                         )
-                        theta = dirAngle(robot_state.state.heading)
-                        heading = (cos(theta), sin(theta), 0.0)
+                        # theta = dirAngle(robot_state.state.pan)
+                        theta = robot_state.state.pan
+                        pan = (cos(theta), sin(theta), 0.0)
                         num_pixels = compute_camera_coverage(
                             face,
-                            heading,
+                            pan,
                             distance
                         )
                         coverage_data[time, target_idx, f_idx] += num_pixels

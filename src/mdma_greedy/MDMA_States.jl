@@ -70,9 +70,24 @@ const drone_height::Float64 = 5.0 # meters
 const target_height::Float64 = 0 # meter
 const cardinaldir = Vector([:E, :NE, :N, :NW, :W, :SW, :S, :SE])
 
+# Discretize pan, tilt, and zoom
+pan_angles = Vector{Float64}(undef, 0)
+function discretize_pan(n::Int64)
+    global pan_angles = Vector{Float64}(undef, n)
+    for i = 0:(n-1)
+        pan_angles[i+1] = i * 2 * pi / n
+    end
+end
+
 function dir_to_index(d::Symbol)
     if d in cardinaldir
         return findall(x -> x == d, cardinaldir)[1]
+    end
+end
+
+function dir_to_index(d::Float64)
+    if d in pan_angles
+        return findall(x -> x == d, pan_angles)[1]
     end
 end
 
@@ -168,16 +183,16 @@ struct PTZState
     x::Float64
     y::Float64
     z::Float64
-    heading::Symbol
+    pan::Float64
     tilt::Float64
     zoom::Float64
-    function PTZState(x::Float64, y::Float64, z::Float64, heading::Symbol, tilt::Float64, zoom::Float64)
-        heading in cardinaldir || throw(ArgumentError("invalid cardinaldir: $heading"))
-        new(x, y, z, heading, tilt, zoom)
+    function PTZState(x::Float64, y::Float64, z::Float64, pan::Float64, tilt::Float64, zoom::Float64)
+        pan in pan_angles || throw(ArgumentError("invalid pan_angle: $pan"))
+        new(x, y, z, pan, tilt, zoom)
     end
 end
 
-PTZState(x::Integer, y::Integer, z::Integer, heading::Symbol, tilt::Integer, zoom::Integer) = PTZState(Float64(x), Float64(y), Float64(z), heading, Float64(tilt), Float64(zoom))
+PTZState(x::Integer, y::Integer, z::Integer, pan::Float64, tilt::Integer, zoom::Integer) = PTZState(Float64(x), Float64(y), Float64(z), pan, Float64(tilt), Float64(zoom))
 
 mutable struct ViewConeObservation
     n::Int64 # Number of actors detected

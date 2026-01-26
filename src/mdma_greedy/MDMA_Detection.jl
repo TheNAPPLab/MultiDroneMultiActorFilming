@@ -23,6 +23,16 @@ function ccw(d::Symbol)::Symbol
     end
 end
 
+function ccw(d::Float64)::Float64
+    d in pan_angles || throw(ArgumentError("invalid pan_angle: $d"))
+    index = findfirst(isequal(d), pan_angles)
+    if (index == length(pan_angles))
+        pan_angles[1]
+    else
+        pan_angles[index+1]
+    end
+end
+
 function cw(d::Symbol)::Symbol
     d in cardinaldir || throw(ArgumentError("invalid cardinaldir: $d"))
     if (d == :E)
@@ -41,6 +51,16 @@ function cw(d::Symbol)::Symbol
         Symbol("SW")
     elseif (d == :SE)
         Symbol("S")
+    end
+end
+
+function cw(d::Float64)::Float64
+    d in pan_angles || throw(ArgumentError("invalid pan_angle: $d"))
+    index = findfirst(isequal(d), pan_angles)
+    if (index == 1)
+        pan_angles[length(pan_angles)]
+    else
+        pan_angles[index-1]
     end
 end
 
@@ -67,7 +87,7 @@ function detectTarget(dstate::PTZState, astate::Target, sensor::ViewConeSensor):
     #     return false
     # else
         # Get view bounds based on heading of Agent
-        heading_angle = dirAngle(dstate.heading)
+        pan_angle = dstate.pan
         view_bounds = [-sensor.fov / 2, sensor.fov / 2]
 
         # compute the true angle of the actor
@@ -77,8 +97,8 @@ function detectTarget(dstate::PTZState, astate::Target, sensor::ViewConeSensor):
 
         # Absolute positions of the top and bottom of the bound not accounting
         # for wrapping inside the 0 to 360 range
-        true_top = heading_angle + sensor.fov / 2
-        true_bot = heading_angle - sensor.fov / 2
+        true_top = pan_angle + sensor.fov / 2
+        true_bot = pan_angle - sensor.fov / 2
 
         # Need to change the min and max ranges for comparison in cases where
         # the boundary is split Across the x axis. This also requires changing
@@ -94,7 +114,7 @@ function detectTarget(dstate::PTZState, astate::Target, sensor::ViewConeSensor):
             compareOp = or
             # println("or")
         else
-            actor_angle = heading_angle - actor_angle
+            actor_angle = pan_angle - actor_angle
             min_angle = view_bounds[1]
             max_angle = view_bounds[2]
             # println("and")
@@ -113,7 +133,7 @@ end
 function detectTarget(dstate::PTZState, astate::Target, camera::PinholeCameraModel)::Bool
     rel_target_pos =
         [astate.x; astate.y; target_height] - [dstate.x; dstate.y; drone_height]
-    theta = dirAngle(dstate.heading)
+    theta = dstate.pan
     if dot([cos(theta); sin(theta); 0], rel_target_pos) >= 0
         image_coord = camera.intrinsics * camera.extrinsics * rel_target_pos
         #print("\nScale ", image_coord[3])

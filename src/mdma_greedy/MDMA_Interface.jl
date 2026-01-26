@@ -12,7 +12,8 @@ function configs_from_file(
     filename::String,
     experiment_name::String,
     move_dist::Number,
-    camera_positions::Vector{Tuple{Float64,Float64,Float64}}
+    camera_positions::Vector{Tuple{Float64,Float64,Float64}},
+    pan_divisions::Int64
 )::MultiDroneMultiActorConfigs
 
     json_string = read(filename, String)
@@ -35,7 +36,7 @@ function configs_from_file(
             rot = loc_pos["rotation"]
             x = loc[1]
             y = loc[2]
-            h = rot[3] # Take rotatin around z as the "heading"
+            h = rot[3] # Take rotatin around z as the "pan"
             weight = loc_pos["weight"]
             target_row[id] = multiply_face_weights(Target(x, y, h, id), weight)
         end
@@ -44,7 +45,7 @@ function configs_from_file(
 
 
     # Making the object
-    grid = MDMA_Grid(Int64(scale["x"]), Int64(scale["y"]), camera_positions, horizon)
+    grid = MDMA_Grid(Int64(scale["x"]), Int64(scale["y"]), camera_positions, pan_divisions, horizon)
     fov = robot_fovs[1]
     sensor = PinholeCameraModel([4.4, 4.4], [1920.0, 1080.0], [6.46, 3.64], 0.0, 0.0, sense_dist)
 
@@ -76,7 +77,7 @@ function targets_from_file(filename::String)::Array{Target,2}
             rot = loc_pos["rotation"]
             x = loc[1]
             y = loc[2]
-            h = rot[3] # Take rotatin around z as the "heading"
+            h = rot[3] # Take rotatin around z as the "pan"
             weight = loc_pos["weight"]
             target_row[id] = multiply_face_weights(Target(x, y, h, id), weight)
         end

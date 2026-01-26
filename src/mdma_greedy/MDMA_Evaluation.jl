@@ -146,7 +146,7 @@ function evaluate_solution(
                                 face.pos[2] - state.state.y,
                                 target_height / 2 - drone_height,
                             )
-                            theta = dirAngle(state.state.heading)
+                            theta = state.state.pan
                             look_direction = (cos(theta), sin(theta), 0.0)
                             # Set previous_coverage to zero
                             camera_pixel_density = compute_camera_coverage(
