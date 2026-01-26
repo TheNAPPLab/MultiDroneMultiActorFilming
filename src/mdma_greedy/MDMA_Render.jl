@@ -19,7 +19,8 @@ end
 
 function draw_grid(g::MDMA_Grid, cr::CairoContext, point_size, ppm, buf)
     set_source_rgba(cr, 0, 0, 0, 0.3)
-    x, y, z = dims(g)
+    x = g.width
+    y = g.height
     for i = 1:x
         for j = 1:y
             arc(cr, i * ppm + buf * ppm, j * ppm + buf * ppm, point_size, 0, 2 * pi)
@@ -215,8 +216,8 @@ end
 
 #Pixels per meter
 function init_cairo(model, conf::RenderConf)
-    width = conf.ppm * dims(model.grid)[1] + 2 * conf.buf * conf.ppm
-    height = conf.ppm * dims(model.grid)[2] + 2 * conf.buf * conf.ppm
+    width = conf.ppm * model.grid.width + 2 * conf.buf * conf.ppm
+    height = conf.ppm * model.grid.height + 2 * conf.buf * conf.ppm
     c = CairoRGBSurface(width, height)
     cr = CairoContext(c)
     draw_background(cr, width, height)
