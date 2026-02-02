@@ -184,10 +184,9 @@ function compute_prior_coverage(
                         distance = (
                             face.pos[1] - robot_state.state.x,
                             face.pos[2] - robot_state.state.y,
-                            target_height / 2 - robot_state.state.z,
+                            -target_height / 2 + robot_state.state.z,
                         )
-                        # theta = dirAngle(robot_state.state.pan)
-                        theta = robot_state.state.pan
+                        theta = (2 * pi) - robot_state.state.pan
                         pan = (cos(theta), sin(theta), 0.0)
                         num_pixels = compute_camera_coverage(
                             face,

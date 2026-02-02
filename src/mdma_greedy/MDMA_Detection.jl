@@ -132,14 +132,16 @@ end
 
 function detectTarget(dstate::PTZState, astate::Target, camera::PinholeCameraModel)::Bool
     rel_target_pos =
-        [astate.x; astate.y; target_height] - [dstate.x; dstate.y; dstate.z]
-    theta = dstate.pan
-    if dot([cos(theta); sin(theta); 0], rel_target_pos) >= 0
-        image_coord = camera.intrinsics * camera.extrinsics * rel_target_pos
+        [astate.x; astate.y; -target_height] - [dstate.x; dstate.y; -dstate.z]
+    theta = (2 * pi) - dstate.pan
+    pan_rotation = [cos(theta) sin(theta) 0; -sin(theta) cos(theta) 0; 0 0 1]
+    image_coord = camera.extrinsics * pan_rotation * rel_target_pos
+    if image_coord[3] >= 0
+        image_coord = camera.intrinsics * image_coord
         #print("\nScale ", image_coord[3])
         image_coord = image_coord / image_coord[3]
         in_frame =
-            sum(image_coord[1:2] .> camera.resolution) + sum(image_coord[1:2] .< [0; 0])
+            sum(image_coord[1:2] .> [camera.resolution[2], camera.resolution[1]]) + sum(image_coord[1:2] .< [0; 0])
         #print("\nDetect target ", rel_target_pos, " ", [dstate.x; dstate.y; drone_height], " ", dstate.heading, " ", image_coord, " ", in_frame)
         if in_frame == 0
             return true

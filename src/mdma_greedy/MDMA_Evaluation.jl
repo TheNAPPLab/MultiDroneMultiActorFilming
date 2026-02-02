@@ -110,7 +110,7 @@ function evaluate_solution(
 
     target_trajectories = multi_configs.target_trajectories
     horizon = multi_configs.horizon
-    sensor = MDMA.PinholeCameraModel([4.4, 4.4], [1920.0, 1080.0], [6.46, 3.64], 0.0, 0.0, 1000.0)
+    sensor = MDMA.PinholeCameraModel([1574.89111, 1613.1925], [1920.0, 1080.0], [923.75228, 564.05564], 0.0, 1000.0)
 
     # Make dataframe
     df = DataFrame(t = 1:horizon)
@@ -144,9 +144,9 @@ function evaluate_solution(
                             distance = (
                                 face.pos[1] - state.state.x,
                                 face.pos[2] - state.state.y,
-                                target_height / 2 - state.state.z,
+                                -target_height / 2 + state.state.z,
                             )
-                            theta = state.state.pan
+                            theta = (2 * pi) - state.state.pan
                             look_direction = (cos(theta), sin(theta), 0.0)
                             # Set previous_coverage to zero
                             camera_pixel_density = compute_camera_coverage(

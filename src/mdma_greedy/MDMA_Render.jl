@@ -107,8 +107,8 @@ function draw_arc(cr::CairoContext, radius, x, y, pan, fov, ppm, fade, cfade, bu
     xc = x * ppm + buf * ppm
     yc = y * ppm + buf * ppm
     radius = radius * ppm
-    angle1 = pan + (-fov / 2)  # angles are specified
-    angle2 = pan + (fov / 2)  # in radians
+    angle1 = -(pan + (fov / 2))  # angles are specified
+    angle2 = -(pan + (-fov / 2))  # in radians
 
     #     set_source_rgba(cr, 0, 0, 0, fade);
     set_source_rgba(cr, (cfade), (1 - cfade) * 0.5, (1 - cfade) * 1.1, fade)

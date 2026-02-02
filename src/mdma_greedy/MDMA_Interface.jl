@@ -47,7 +47,7 @@ function configs_from_file(
     # Making the object
     grid = MDMA_Grid(Int64(scale["x"]), Int64(scale["y"]), camera_positions, pan_divisions, horizon)
     fov = robot_fovs[1]
-    sensor = PinholeCameraModel([4.4, 4.4], [1920.0, 1080.0], [6.46, 3.64], 0.0, 0.0, sense_dist)
+    sensor = PinholeCameraModel([1574.89111, 1613.1925], [1920.0, 1080.0], [923.75228, 564.05564], 0.0, Float64(sense_dist))
 
     return MultiDroneMultiActorConfigs(
         experiment_name = experiment_name,

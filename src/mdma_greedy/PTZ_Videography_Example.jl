@@ -2,13 +2,13 @@ using MDMA
 using SubmodularMaximization
 
 # Modify experiment_name for different experiments
-experiment_name = "split_and_join"
+experiment_name = "four_split"
 path_to_experiments = "./experiments"
 starting_states = Dict()
-pan_divisions = 8 # Number of pan angles to use
+pan_divisions = 16 # Number of pan angles to use
 
 # Modified init_discrete_problem from MDMA_Experiment
-sensor = MDMA.PinholeCameraModel([4.4, 4.4], [1920.0, 1080.0], [6.46, 3.64], 0.0, 0.0, 3.0)
+sensor = MDMA.PinholeCameraModel([1574.89111, 1613.1925], [1920.0, 1080.0], [923.75228, 564.05564], 0.0, 3.0)
 move_dist = 0
 camera_positions = [
     (15.0, 2.0, 5.0),

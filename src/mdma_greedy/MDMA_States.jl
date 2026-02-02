@@ -32,32 +32,27 @@ struct PinholeCameraModel
     function PinholeCameraModel(
         focal_length::Vector{Float64},
         resolution::Vector{Float64},
-        lens_dim::Vector{Float64},
-        skew::Float64,
+        principal_point::Vector{Float64},
         pitch::Float64,
         cutoff::Float64,
     )
         # world units to pixel units
-        fx = resolution[1] / lens_dim[1] * focal_length[1]
-        fy = resolution[2] / lens_dim[2] * focal_length[2]
-        cx = resolution[1] / 2
-        cy = resolution[2] / 2
+        fx = focal_length[1]
+        fy = focal_length[2]
+        cx = principal_point[1]
+        cy = principal_point[2]
 
-        intrinsics = [[fx, skew, cx] [0, fy, cy] [0, 0, 1]]
+        intrinsics = [fx 0 cx;
+                      0 fy cy;
+                      0 0 1]
 
         # One matrix is flipping from world coordinate to drone coordinate
         # then from drone to camera coordinate
         # Drone -> camera redifine the axis
         # Rotation on y axis
-        extrinsics = [[cos(pitch), 0, sin(pitch)] [0, 1, 0] [-sin(pitch), 0, cos(pitch)]]
+        extrinsics = [0 1 0; 0 0 1; 1 0 0] * [cos(pitch) 0 sin(pitch); 0 1 0; -sin(pitch) 0 cos(pitch)]
 
-        # extrinsics = [[0, sin(pitch), cos(pitch)] [-1, 0, 0] [0, cos(pitch), -sin(pitch)]] #[[1, 0, 0] [0, cos(pitch), -sin(pitch)] [0, sin(pitch), cos(pitch)]]
-
-
-        # extrinsics = [[0, 0, 1] [-1, 0, 0] [0, 1, 0]] #[[1, 0, 0] [0, cos(pitch), -sin(pitch)] [0, sin(pitch), cos(pitch)]]
-        # extrinsics = [[1, 0, 0] [0, cos(pitch), -sin(pitch)] [0, sin(pitch), cos(pitch)]]
-
-        fov = atan(resolution[1], 2 * focal_length[1])
+        fov = 2 * atan(resolution[1], 2 * focal_length[1])
         println("PinholeCameraModel Used")
         println("Fov: $(fov)")
         return new(intrinsics, extrinsics, resolution, fov, cutoff)

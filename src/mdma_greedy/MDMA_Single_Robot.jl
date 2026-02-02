@@ -136,9 +136,9 @@ function compute_single_agent_view_reward(
                 distance = (
                     face.pos[1] - mdp_state.state.x,
                     face.pos[2] - mdp_state.state.y,
-                    target_height / 2 - mdp_state.state.z,
+                    -target_height / 2 + mdp_state.state.z,
                 )
-                theta = mdp_state.state.pan
+                theta = (2 * pi) - mdp_state.state.pan
                 pan = (cos(theta), sin(theta), 0.0)
 
                 # Includes the sum
@@ -262,7 +262,7 @@ function POMDPs.reward(
     reward = load_cached_reward(model, action)
 
     if (action.state.pan == state.state.pan)
-        reward += 0.02
+        reward += 0.1
     end
 
     reward
@@ -335,7 +335,7 @@ function generate_target_trajectories(
 end
 
 @testset "single_robot_planner" begin
-    sensor = PinholeCameraModel([4.4, 4.4], [1920.0, 1080.0], [6.46, 3.64], 0.0, 0.0, 3.0)
+    sensor = PinholeCameraModel([1574.89111, 1613.1925], [1920.0, 1080.0], [923.75228, 564.05564], 0.0, 3.0)
     targets = Vector{Target}(undef, 0)
     push!(targets, Target(1, 2, 0, 1))
     push!(targets, Target(1, 3, 0, 2))
