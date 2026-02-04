@@ -13,7 +13,8 @@ function configs_from_file(
     experiment_name::String,
     move_dist::Number,
     camera_positions::Vector{Tuple{Float64,Float64,Float64}},
-    pan_divisions::Int64
+    pan_divisions::Int64,
+    tilt_divisions::Int64
 )::MultiDroneMultiActorConfigs
 
     json_string = read(filename, String)
@@ -45,7 +46,7 @@ function configs_from_file(
 
 
     # Making the object
-    grid = MDMA_Grid(Int64(scale["x"]), Int64(scale["y"]), camera_positions, pan_divisions, horizon)
+    grid = MDMA_Grid(Int64(scale["x"]), Int64(scale["y"]), camera_positions, pan_divisions, tilt_divisions, horizon)
     fov = robot_fovs[1]
     sensor = PinholeCameraModel([1574.89111, 1613.1925], [1920.0, 1080.0], [923.75228, 564.05564], 0.0, Float64(sense_dist))
 

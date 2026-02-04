@@ -1,4 +1,4 @@
-export ccw, cw, absoluteAngle, detectTarget, dirAngle
+export ccw, cw, absoluteAngle, detectTarget, dirAngle, up, down
 using LinearAlgebra
 
 # using MDMA_Problem
@@ -24,7 +24,7 @@ function ccw(d::Symbol)::Symbol
 end
 
 function ccw(d::Float64)::Float64
-    d in pan_angles || throw(ArgumentError("invalid pan_angle: $d"))
+    d in pan_angles || throw(ArgumentError("invalid pan: $d"))
     index = findfirst(isequal(d), pan_angles)
     if (index == length(pan_angles))
         pan_angles[1]
@@ -55,12 +55,32 @@ function cw(d::Symbol)::Symbol
 end
 
 function cw(d::Float64)::Float64
-    d in pan_angles || throw(ArgumentError("invalid pan_angle: $d"))
+    d in pan_angles || throw(ArgumentError("invalid pan: $d"))
     index = findfirst(isequal(d), pan_angles)
     if (index == 1)
         pan_angles[length(pan_angles)]
     else
         pan_angles[index-1]
+    end
+end
+
+function up(d::Float64)::Float64
+    d in tilt_angles || throw(ArgumentError("invalid tilt: $d"))
+    index = findfirst(isequal(d), tilt_angles)
+    if (index == length(tilt_angles))
+        d
+    else
+        tilt_angles[index+1]
+    end
+end
+
+function down(d::Float64)::Float64
+    d in tilt_angles || throw(ArgumentError("invalid tilt: $d"))
+    index = findfirst(isequal(d), tilt_angles)
+    if (index == 1)
+        d
+    else
+        tilt_angles[index-1]
     end
 end
 
@@ -133,9 +153,11 @@ end
 function detectTarget(dstate::PTZState, astate::Target, camera::PinholeCameraModel)::Bool
     rel_target_pos =
         [astate.x; astate.y; -target_height] - [dstate.x; dstate.y; -dstate.z]
-    theta = (2 * pi) - dstate.pan
-    pan_rotation = [cos(theta) sin(theta) 0; -sin(theta) cos(theta) 0; 0 0 1]
-    image_coord = camera.extrinsics * pan_rotation * rel_target_pos
+    pan = (2 * pi) - dstate.pan
+    tilt = dstate.tilt
+    pan_rotation = [cos(pan) sin(pan) 0; -sin(pan) cos(pan) 0; 0 0 1]
+    tilt_rotation = [cos(tilt) 0 -sin(tilt); 0 1 0; sin(tilt) 0 cos(tilt)]
+    image_coord = camera.extrinsics * tilt_rotation * pan_rotation * rel_target_pos
     if image_coord[3] >= 0
         image_coord = camera.intrinsics * image_coord
         #print("\nScale ", image_coord[3])

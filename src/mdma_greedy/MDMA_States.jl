@@ -67,10 +67,22 @@ const cardinaldir = Vector([:E, :NE, :N, :NW, :W, :SW, :S, :SE])
 
 # Discretize pan, tilt, and zoom
 pan_angles = Vector{Float64}(undef, 0)
+tilt_angles = Vector{Float64}(undef, 0)
+
 function discretize_pan(n::Int64)
     global pan_angles = Vector{Float64}(undef, n)
     for i = 0:(n-1)
         pan_angles[i+1] = i * 2 * pi / n
+    end
+end
+
+function discretize_tilt(n::Int64)
+    global tilt_angles = Vector{Float64}(undef, n)
+    min_tilt = -pi/2
+    max_tilt = pi/2
+    increment = (max_tilt - min_tilt) / (n-1)
+    for i = 0:(n-1)
+        tilt_angles[i+1] = min_tilt + (i * increment)
     end
 end
 
@@ -80,9 +92,9 @@ function dir_to_index(d::Symbol)
     end
 end
 
-function dir_to_index(d::Float64)
-    if d in pan_angles
-        return findall(x -> x == d, pan_angles)[1]
+function dir_to_index(d::Float64, options::Vector{Float64})
+    if d in options
+        return findall(x -> x == d, options)[1]
     end
 end
 
@@ -182,7 +194,8 @@ struct PTZState
     tilt::Float64
     zoom::Float64
     function PTZState(x::Float64, y::Float64, z::Float64, pan::Float64, tilt::Float64, zoom::Float64)
-        pan in pan_angles || throw(ArgumentError("invalid pan_angle: $pan"))
+        pan in pan_angles || throw(ArgumentError("invalid pan: $pan"))
+        tilt in tilt_angles || throw(ArgumentError("invalid tilt: $tilt"))
         new(x, y, z, pan, tilt, zoom)
     end
 end

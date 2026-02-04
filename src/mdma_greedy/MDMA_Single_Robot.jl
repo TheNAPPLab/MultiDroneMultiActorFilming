@@ -28,20 +28,21 @@ export get_states,
 # TODO Update this
 
 get_states(g::MDMA_Grid) = g.states
-function get_states(camera_positions::Vector{Tuple{Float64,Float64,Float64}}, pan_divisions::Int64, horizon::Int64)
+function get_states(camera_positions::Vector{Tuple{Float64,Float64,Float64}}, pan_divisions::Int64, tilt_divisions::Int64, horizon::Int64)
     num_cameras = length(camera_positions)
-    states = Array{MDPState,3}(undef, num_cameras, pan_divisions, horizon)
+    states = Array{MDPState,4}(undef, num_cameras, pan_divisions, tilt_divisions, horizon)
     for i in CartesianIndices(states)
         camera_id = i[1]
         p = i[2] # pan
-        t = i[3] # time
+        t = i[3] # pan
+        time = i[4] # time
         x, y, z = camera_positions[camera_id]        
-        states[i] = MDPState(PTZState(x, y, z, pan_angles[p], 0.0, 0.0), t, horizon)
+        states[i] = MDPState(PTZState(x, y, z, pan_angles[p], tilt_angles[t], 0.0), time, horizon)
     end
     states
 end
 
-dims(g::MDMA_Grid) = (length(g.camera_positions), g.pan_divisions, g.horizon)
+dims(g::MDMA_Grid) = (length(g.camera_positions), g.pan_divisions, g.tilt_divisions, g.horizon)
 num_states(g::MDMA_Grid) = length(g.states)
 
 # States in grid should not have x or y lower than 1 or more than width/height
@@ -59,7 +60,7 @@ mutable struct SingleRobotMultiTargetViewCoverageProblem <: AbstractSingleRobotP
     coverage_data::CoverageData
     initial_state::MDPState
     # view_reward_cache::Vector{Float64}
-    view_reward_cache::Array{Float64,3}
+    view_reward_cache::Array{Float64,4}
     # Add default height of 7 meters
 
     function SingleRobotMultiTargetViewCoverageProblem(
@@ -80,7 +81,7 @@ mutable struct SingleRobotMultiTargetViewCoverageProblem <: AbstractSingleRobotP
             move_dist,
             coverage_data,
             initial_state,
-            zeros(Float64, 0, 0, 0)
+            zeros(Float64, 0, 0, 0, 0)
         )
 
         this.view_reward_cache = initialize_reward_cache(this)
@@ -91,7 +92,7 @@ get_states(model::SingleRobotMultiTargetViewCoverageProblem) = get_states(model.
 horizon(x::AbstractSingleRobotProblem) = x.horizon
 
 # Cache view rewards for each state
-function initialize_reward_cache(this)::Array{Float64, 3}
+function initialize_reward_cache(this)::Array{Float64, 4}
     states = get_states(this)
 
     map(x -> compute_single_agent_view_reward(this, x), states)
@@ -103,7 +104,8 @@ function load_cached_reward(
         state::MDPState)
 
     model.view_reward_cache[findfirst(x -> x == (state.state.x, state.state.y, state.state.z), model.grid.camera_positions),
-                            dir_to_index(state.state.pan),
+                            dir_to_index(state.state.pan, pan_angles),
+                            dir_to_index(state.state.tilt, tilt_angles),
                             state.depth
                            ]
     # model.view_reward_cache[stateindex(state)]
@@ -138,12 +140,14 @@ function compute_single_agent_view_reward(
                     face.pos[2] - mdp_state.state.y,
                     -target_height / 2 + mdp_state.state.z,
                 )
-                theta = (2 * pi) - mdp_state.state.pan
-                pan = (cos(theta), sin(theta), 0.0)
+                pan = (2 * pi) - mdp_state.state.pan
+                tilt = mdp_state.state.tilt
+
+                heading = (cos(pan)*cos(tilt), sin(pan)*cos(tilt), -sin(tilt))
 
                 # Includes the sum
-                cumulative_face_coverage = prior_face_coverage +
-                    compute_camera_coverage(face, pan, distance)
+                cumulative_face_coverage = prior_face_coverage + 
+                    compute_camera_coverage(face, heading, distance)
 
 
                 # Compute marginal view reward for this face
@@ -188,7 +192,8 @@ end
 function POMDPs.stateindex(model::AbstractSingleRobotProblem, s::MDPState)
     cart = CartesianIndex(
         findfirst(x -> x == (s.state.x, s.state.y, s.state.z), model.grid.camera_positions),
-        dir_to_index(s.state.pan),
+        dir_to_index(s.state.pan, pan_angles),
+        dir_to_index(s.state.tilt, tilt_angles),
         (model.horizon + 1) - s.depth,
     )
     # cart = CartesianIndex(s.state.y, s.state.x, dir_to_index(s.state.heading), s.depth)
@@ -216,9 +221,13 @@ function neighbors(
     actions = Vector{MDPState}(undef, 0)
     uavstate = state.state
     if state.depth + 1 <= model.horizon
-        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, uavstate.z, ccw(uavstate.pan), 0.0, 0.0)))
-        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, uavstate.z, cw(uavstate.pan), 0.0, 0.0)))
-        push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, uavstate.z, uavstate.pan, 0.0, 0.0)))
+        pan_options = unique([ccw(uavstate.pan), cw(uavstate.pan), uavstate.pan])
+        tilt_options = unique([up(uavstate.tilt), down(uavstate.tilt), uavstate.tilt])
+        for pan in pan_options
+            for tilt in tilt_options
+                push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, uavstate.z, pan, tilt, 0.0)))
+            end
+        end
     end
     actions
 end
@@ -263,6 +272,10 @@ function POMDPs.reward(
 
     if (action.state.pan == state.state.pan)
         reward += 0.1
+    end
+
+    if (action.state.tilt == state.state.tilt)
+        reward += 0.02
     end
 
     reward
@@ -343,7 +356,7 @@ end
 
     camera_positions = [(0.0, 0.0, 0.0)]
     horizon = 4
-    grid = MDMA_Grid(20, 20, camera_positions, 8, horizon)
+    grid = MDMA_Grid(20, 20, camera_positions, 8, 8, horizon)
 
     # initial_state = MDPState(UAVState(0,0,:S))
     # traj = generate_target_trajectories(grid, horizon, targets)

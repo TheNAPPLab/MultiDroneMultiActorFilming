@@ -2,10 +2,11 @@ using MDMA
 using SubmodularMaximization
 
 # Modify experiment_name for different experiments
-experiment_name = "four_split"
+experiment_name = "split_and_join"
 path_to_experiments = "./experiments"
 starting_states = Dict()
-pan_divisions = 16 # Number of pan angles to use
+pan_divisions = 8 # Number of pan angles to use
+tilt_divisions = 5 # Number of tilt angles to use
 
 # Modified init_discrete_problem from MDMA_Experiment
 sensor = MDMA.PinholeCameraModel([1574.89111, 1613.1925], [1920.0, 1080.0], [923.75228, 564.05564], 0.0, 3.0)
@@ -24,7 +25,8 @@ multi_configs = configs_from_file(
     experiment_name,
     move_dist,
     camera_positions,
-    pan_divisions
+    pan_divisions,
+    tilt_divisions
 )
 multi_configs.sensor = sensor
 starting_states[experiment_name] = [
