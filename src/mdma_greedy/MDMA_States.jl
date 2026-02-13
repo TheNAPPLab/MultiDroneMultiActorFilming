@@ -30,17 +30,17 @@ struct PinholeCameraModel
     fov::Float64
     cutoff::Float64
     function PinholeCameraModel(
-        focal_length::Vector{Float64},
+        focal_length::Float64, # In mm
         resolution::Vector{Float64},
-        principal_point::Vector{Float64},
+        lens_dim::Vector{Float64}, # In mm
         pitch::Float64,
         cutoff::Float64,
     )
         # world units to pixel units
-        fx = focal_length[1]
-        fy = focal_length[2]
-        cx = principal_point[1]
-        cy = principal_point[2]
+        fx = focal_length * resolution[1] / lens_dim[1]
+        fy = focal_length * resolution[2] / lens_dim[2]
+        cx = resolution[1] / 2 #923.75228
+        cy = resolution[2] / 2 #564.05564
 
         intrinsics = [fx 0 cx;
                       0 fy cy;
@@ -52,9 +52,9 @@ struct PinholeCameraModel
         # Rotation on y axis
         extrinsics = [0 1 0; 0 0 1; 1 0 0] * [cos(pitch) 0 sin(pitch); 0 1 0; -sin(pitch) 0 cos(pitch)]
 
-        fov = 2 * atan(resolution[1], 2 * focal_length[1])
+        fov = 2 * atan(resolution[1], 2 * fx)
         println("PinholeCameraModel Used")
-        println("Fov: $(fov)")
+        println("1x Zoom Fov: $(fov)")
         return new(intrinsics, extrinsics, resolution, fov, cutoff)
     end
 end
@@ -66,8 +66,9 @@ const target_height::Float64 = 0 # meter
 const cardinaldir = Vector([:E, :NE, :N, :NW, :W, :SW, :S, :SE])
 
 # Discretize pan, tilt, and zoom
-pan_angles = Vector{Float64}(undef, 0)
-tilt_angles = Vector{Float64}(undef, 0)
+pan_angles = Vector{Float64}(undef, 0) # In radians
+tilt_angles = Vector{Float64}(undef, 0) # In radians
+zoom_vals = Vector{Float64}(undef, 0) # x1, x2, etc
 
 function discretize_pan(n::Int64)
     global pan_angles = Vector{Float64}(undef, n)
@@ -83,6 +84,16 @@ function discretize_tilt(n::Int64)
     increment = (max_tilt - min_tilt) / (n-1)
     for i = 0:(n-1)
         tilt_angles[i+1] = min_tilt + (i * increment)
+    end
+end
+
+function discretize_zoom(n::Int64)
+    global zoom_vals = Vector{Float64}(undef, n)
+    min_zoom = 1.0
+    max_zoom = 3.0
+    increment = (max_zoom - min_zoom) / (n-1)
+    for i = 0:(n-1)
+        zoom_vals[i+1] = min_zoom + (i * increment)
     end
 end
 
@@ -196,6 +207,7 @@ struct PTZState
     function PTZState(x::Float64, y::Float64, z::Float64, pan::Float64, tilt::Float64, zoom::Float64)
         pan in pan_angles || throw(ArgumentError("invalid pan: $pan"))
         tilt in tilt_angles || throw(ArgumentError("invalid tilt: $tilt"))
+        zoom in zoom_vals || throw(ArgumentError("invalid zoom: $zoom"))
         new(x, y, z, pan, tilt, zoom)
     end
 end

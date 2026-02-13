@@ -96,7 +96,7 @@ end
 function draw_state(cr::CairoContext, state::PTZState, model, ppm, fade, cfade, buf)
     Cairo.save(cr)
     move_to(cr, state.x * ppm + buf * ppm, state.y * ppm + buf * ppm)
-    fov = model.sensor.fov
+    fov = 2 * atan(model.sensor.resolution[1], 2 * model.sensor.intrinsics[1,1] * state.zoom)
     radius = model.sensor.cutoff
     draw_arc(cr, radius, state.x, state.y, state.pan, fov, ppm, fade, cfade, buf)
     restore(cr)

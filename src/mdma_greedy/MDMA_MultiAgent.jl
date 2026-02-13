@@ -105,11 +105,11 @@ end
 function compute_camera_coverage(
     face::Face,
     heading::Tuple{Float64,Float64,Float64},
-    distance::Tuple{Float64,Float64,Float64}
+    distance::Tuple{Float64,Float64,Float64},
+    alpha::Float64 = 1.0
 )::Float64
     # update
 
-    alpha = 1
     face_normal = face.normal
 
     current_pixel_density =

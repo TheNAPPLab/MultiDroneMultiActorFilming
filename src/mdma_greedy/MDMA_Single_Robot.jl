@@ -28,21 +28,22 @@ export get_states,
 # TODO Update this
 
 get_states(g::MDMA_Grid) = g.states
-function get_states(camera_positions::Vector{Tuple{Float64,Float64,Float64}}, pan_divisions::Int64, tilt_divisions::Int64, horizon::Int64)
+function get_states(camera_positions::Vector{Tuple{Float64,Float64,Float64}}, pan_divisions::Int64, tilt_divisions::Int64, zoom_divisions::Int64, horizon::Int64)
     num_cameras = length(camera_positions)
-    states = Array{MDPState,4}(undef, num_cameras, pan_divisions, tilt_divisions, horizon)
+    states = Array{MDPState,5}(undef, num_cameras, pan_divisions, tilt_divisions, zoom_divisions, horizon)
     for i in CartesianIndices(states)
         camera_id = i[1]
-        p = i[2] # pan
-        t = i[3] # pan
-        time = i[4] # time
-        x, y, z = camera_positions[camera_id]        
-        states[i] = MDPState(PTZState(x, y, z, pan_angles[p], tilt_angles[t], 0.0), time, horizon)
+        P = i[2] # pan
+        T = i[3] # tilt
+        Z = i[4] # zoom
+        t = i[5] # time
+        x, y, z = camera_positions[camera_id]
+        states[i] = MDPState(PTZState(x, y, z, pan_angles[P], tilt_angles[T], zoom_vals[Z]), t, horizon)
     end
     states
 end
 
-dims(g::MDMA_Grid) = (length(g.camera_positions), g.pan_divisions, g.tilt_divisions, g.horizon)
+dims(g::MDMA_Grid) = (length(g.camera_positions), g.pan_divisions, g.tilt_divisions, g.zoom_divisions, g.horizon)
 num_states(g::MDMA_Grid) = length(g.states)
 
 # States in grid should not have x or y lower than 1 or more than width/height
@@ -59,8 +60,7 @@ mutable struct SingleRobotMultiTargetViewCoverageProblem <: AbstractSingleRobotP
     move_dist::Int64
     coverage_data::CoverageData
     initial_state::MDPState
-    # view_reward_cache::Vector{Float64}
-    view_reward_cache::Array{Float64,4}
+    view_reward_cache::Array{Float64,5}
     # Add default height of 7 meters
 
     function SingleRobotMultiTargetViewCoverageProblem(
@@ -81,7 +81,7 @@ mutable struct SingleRobotMultiTargetViewCoverageProblem <: AbstractSingleRobotP
             move_dist,
             coverage_data,
             initial_state,
-            zeros(Float64, 0, 0, 0, 0)
+            zeros(Float64, 0, 0, 0, 0, 0)
         )
 
         this.view_reward_cache = initialize_reward_cache(this)
@@ -92,7 +92,7 @@ get_states(model::SingleRobotMultiTargetViewCoverageProblem) = get_states(model.
 horizon(x::AbstractSingleRobotProblem) = x.horizon
 
 # Cache view rewards for each state
-function initialize_reward_cache(this)::Array{Float64, 4}
+function initialize_reward_cache(this)::Array{Float64, 5}
     states = get_states(this)
 
     map(x -> compute_single_agent_view_reward(this, x), states)
@@ -106,9 +106,16 @@ function load_cached_reward(
     model.view_reward_cache[findfirst(x -> x == (state.state.x, state.state.y, state.state.z), model.grid.camera_positions),
                             dir_to_index(state.state.pan, pan_angles),
                             dir_to_index(state.state.tilt, tilt_angles),
+                            dir_to_index(state.state.zoom, zoom_vals),
                             state.depth
                            ]
     # model.view_reward_cache[stateindex(state)]
+end
+
+function compute_alpha(model::SingleRobotMultiTargetViewCoverageProblem, zoom::Float64)
+    fx = model.sensor.intrinsics[1, 1] * zoom
+    fy = model.sensor.intrinsics[2, 2] * zoom
+    alpha = (fx * fy) / (model.sensor.intrinsics[1, 1] * model.sensor.intrinsics[2, 2])
 end
 
 function compute_single_agent_view_reward(
@@ -142,12 +149,14 @@ function compute_single_agent_view_reward(
                 )
                 pan = (2 * pi) - mdp_state.state.pan
                 tilt = mdp_state.state.tilt
+                zoom = mdp_state.state.zoom
 
                 heading = (cos(pan)*cos(tilt), sin(pan)*cos(tilt), -sin(tilt))
 
                 # Includes the sum
+                alpha = compute_alpha(model, zoom)
                 cumulative_face_coverage = prior_face_coverage + 
-                    compute_camera_coverage(face, heading, distance)
+                    compute_camera_coverage(face, heading, distance, alpha)
 
 
                 # Compute marginal view reward for this face
@@ -194,6 +203,7 @@ function POMDPs.stateindex(model::AbstractSingleRobotProblem, s::MDPState)
         findfirst(x -> x == (s.state.x, s.state.y, s.state.z), model.grid.camera_positions),
         dir_to_index(s.state.pan, pan_angles),
         dir_to_index(s.state.tilt, tilt_angles),
+        dir_to_index(s.state.zoom, zoom_vals),
         (model.horizon + 1) - s.depth,
     )
     # cart = CartesianIndex(s.state.y, s.state.x, dir_to_index(s.state.heading), s.depth)
@@ -223,9 +233,12 @@ function neighbors(
     if state.depth + 1 <= model.horizon
         pan_options = unique([ccw(uavstate.pan), cw(uavstate.pan), uavstate.pan])
         tilt_options = unique([up(uavstate.tilt), down(uavstate.tilt), uavstate.tilt])
+        zoom_options = unique([zoom_in(uavstate.zoom), zoom_out(uavstate.zoom), uavstate.zoom])
         for pan in pan_options
             for tilt in tilt_options
-                push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, uavstate.z, pan, tilt, 0.0)))
+                for zoom in zoom_options
+                    push!(actions, MDPState(state, PTZState(uavstate.x, uavstate.y, uavstate.z, pan, tilt, zoom)))
+                end
             end
         end
     end
@@ -276,6 +289,10 @@ function POMDPs.reward(
 
     if (action.state.tilt == state.state.tilt)
         reward += 0.02
+    end
+
+    if (action.state.zoom == state.state.zoom)
+        reward += 0.05
     end
 
     reward
@@ -348,7 +365,7 @@ function generate_target_trajectories(
 end
 
 @testset "single_robot_planner" begin
-    sensor = PinholeCameraModel([1574.89111, 1613.1925], [1920.0, 1080.0], [923.75228, 564.05564], 0.0, 3.0)
+    sensor = PinholeCameraModel(4.4, [1920.0, 1080.0], [5.60, 3.15], 0.0, 3.0)
     targets = Vector{Target}(undef, 0)
     push!(targets, Target(1, 2, 0, 1))
     push!(targets, Target(1, 3, 0, 2))
@@ -356,7 +373,7 @@ end
 
     camera_positions = [(0.0, 0.0, 0.0)]
     horizon = 4
-    grid = MDMA_Grid(20, 20, camera_positions, 8, 8, horizon)
+    grid = MDMA_Grid(20, 20, camera_positions, 8, 8, 8, horizon)
 
     # initial_state = MDPState(UAVState(0,0,:S))
     # traj = generate_target_trajectories(grid, horizon, targets)

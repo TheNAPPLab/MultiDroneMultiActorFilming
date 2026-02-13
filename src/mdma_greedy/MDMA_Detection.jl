@@ -23,9 +23,9 @@ function ccw(d::Symbol)::Symbol
     end
 end
 
-function ccw(d::Float64)::Float64
-    d in pan_angles || throw(ArgumentError("invalid pan: $d"))
-    index = findfirst(isequal(d), pan_angles)
+function ccw(p::Float64)::Float64
+    p in pan_angles || throw(ArgumentError("invalid pan: $p"))
+    index = findfirst(isequal(p), pan_angles)
     if (index == length(pan_angles))
         pan_angles[1]
     else
@@ -54,9 +54,9 @@ function cw(d::Symbol)::Symbol
     end
 end
 
-function cw(d::Float64)::Float64
-    d in pan_angles || throw(ArgumentError("invalid pan: $d"))
-    index = findfirst(isequal(d), pan_angles)
+function cw(p::Float64)::Float64
+    p in pan_angles || throw(ArgumentError("invalid pan: $p"))
+    index = findfirst(isequal(p), pan_angles)
     if (index == 1)
         pan_angles[length(pan_angles)]
     else
@@ -64,23 +64,43 @@ function cw(d::Float64)::Float64
     end
 end
 
-function up(d::Float64)::Float64
-    d in tilt_angles || throw(ArgumentError("invalid tilt: $d"))
-    index = findfirst(isequal(d), tilt_angles)
+function up(t::Float64)::Float64
+    t in tilt_angles || throw(ArgumentError("invalid tilt: $t"))
+    index = findfirst(isequal(t), tilt_angles)
     if (index == length(tilt_angles))
-        d
+        t
     else
         tilt_angles[index+1]
     end
 end
 
-function down(d::Float64)::Float64
-    d in tilt_angles || throw(ArgumentError("invalid tilt: $d"))
-    index = findfirst(isequal(d), tilt_angles)
+function down(t::Float64)::Float64
+    t in tilt_angles || throw(ArgumentError("invalid tilt: $t"))
+    index = findfirst(isequal(t), tilt_angles)
     if (index == 1)
-        d
+        t
     else
         tilt_angles[index-1]
+    end
+end
+
+function zoom_in(z::Float64)::Float64
+    z in zoom_vals || throw(ArgumentError("invalid zoom: $z"))
+    index = findfirst(isequal(z), zoom_vals)
+    if (index == length(zoom_vals))
+        z
+    else
+        zoom_vals[index+1]
+    end
+end
+
+function zoom_out(z::Float64)::Float64
+    z in zoom_vals || throw(ArgumentError("invalid zoom: $z"))
+    index = findfirst(isequal(z), zoom_vals)
+    if (index == 1)
+        z
+    else
+        zoom_vals[index-1]
     end
 end
 
@@ -155,15 +175,17 @@ function detectTarget(dstate::PTZState, astate::Target, camera::PinholeCameraMod
         [astate.x; astate.y; -target_height] - [dstate.x; dstate.y; -dstate.z]
     pan = (2 * pi) - dstate.pan
     tilt = dstate.tilt
+    zoom = dstate.zoom
     pan_rotation = [cos(pan) sin(pan) 0; -sin(pan) cos(pan) 0; 0 0 1]
     tilt_rotation = [cos(tilt) 0 -sin(tilt); 0 1 0; sin(tilt) 0 cos(tilt)]
+    zoom_adjust = [zoom 0 0; 0 zoom 0; 0 0 1]
     image_coord = camera.extrinsics * tilt_rotation * pan_rotation * rel_target_pos
     if image_coord[3] >= 0
-        image_coord = camera.intrinsics * image_coord
+        image_coord = camera.intrinsics * zoom_adjust * image_coord
         #print("\nScale ", image_coord[3])
         image_coord = image_coord / image_coord[3]
         in_frame =
-            sum(image_coord[1:2] .> [camera.resolution[2], camera.resolution[1]]) + sum(image_coord[1:2] .< [0; 0])
+            sum(image_coord[1:2] .> camera.resolution) + sum(image_coord[1:2] .< [0; 0])
         #print("\nDetect target ", rel_target_pos, " ", [dstate.x; dstate.y; drone_height], " ", dstate.heading, " ", image_coord, " ", in_frame)
         if in_frame == 0
             return true
