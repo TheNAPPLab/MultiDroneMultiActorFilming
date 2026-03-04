@@ -39,8 +39,8 @@ struct PinholeCameraModel
         # world units to pixel units
         fx = focal_length * resolution[1] / lens_dim[1]
         fy = focal_length * resolution[2] / lens_dim[2]
-        cx = resolution[1] / 2 #923.75228
-        cy = resolution[2] / 2 #564.05564
+        cx = resolution[1] / 2
+        cy = resolution[2] / 2
 
         intrinsics = [fx 0 cx;
                       0 fy cy;
@@ -62,7 +62,7 @@ end
 Camera = Union{ViewConeSensor,PinholeCameraModel}
 
 const drone_height::Float64 = 5.0 # meters
-const target_height::Float64 = 0 # meter
+const target_height::Float64 = 1.8 # meters
 const cardinaldir = Vector([:E, :NE, :N, :NW, :W, :SW, :S, :SE])
 
 # Discretize pan, tilt, and zoom

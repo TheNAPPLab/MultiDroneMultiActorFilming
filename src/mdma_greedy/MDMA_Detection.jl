@@ -171,15 +171,19 @@ function detectTarget(dstate::PTZState, astate::Target, sensor::ViewConeSensor):
 end
 
 function detectTarget(dstate::PTZState, astate::Target, camera::PinholeCameraModel)::Bool
-    rel_target_pos =
-        [astate.x; astate.y; -target_height] - [dstate.x; dstate.y; -dstate.z]
-    pan = (2 * pi) - dstate.pan
-    tilt = dstate.tilt
+    rel_target_pos = [astate.x - dstate.x;
+                      astate.y - dstate.y; 
+                      -target_height + dstate.z;
+                      1]
+    pan = dstate.pan - (2 * pi)
+    tilt = -dstate.tilt
     zoom = dstate.zoom
-    pan_rotation = [cos(pan) sin(pan) 0; -sin(pan) cos(pan) 0; 0 0 1]
-    tilt_rotation = [cos(tilt) 0 -sin(tilt); 0 1 0; sin(tilt) 0 cos(tilt)]
+    pan_rotation = [cos(pan) -sin(pan) 0; sin(pan) cos(pan) 0; 0 0 1]
+    tilt_rotation = [cos(tilt) 0 sin(tilt); 0 1 0; -sin(tilt) 0 cos(tilt)]
     zoom_adjust = [zoom 0 0; 0 zoom 0; 0 0 1]
-    image_coord = camera.extrinsics * tilt_rotation * pan_rotation * rel_target_pos
+    R = camera.extrinsics * tilt_rotation * pan_rotation
+    t = -R * [dstate.x; dstate.y; -dstate.z]
+    image_coord = [R t] * [astate.x; astate.y; -target_height; 1]
     if image_coord[3] >= 0
         image_coord = camera.intrinsics * zoom_adjust * image_coord
         #print("\nScale ", image_coord[3])
