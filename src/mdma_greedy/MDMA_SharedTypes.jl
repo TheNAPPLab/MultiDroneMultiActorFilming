@@ -29,6 +29,7 @@ MDPState(state, horizon) = MDPState(state, 1, horizon)
 MDPState(m::MDPState, s::State) = MDPState(s, m.depth + 1, m.horizon)
 MDPState(m::MDPState) = MDPState(m.state, m.depth + 1, m.horizon)
 MDPState(m::MDPState, a::MDPState) = MDPState(a.state, m.depth + 1, m.horizon)
+MDPState(m::MDPState, d::Int64, h::Int64) = MDPState(m.state, d, h)
 
 const Trajectory = Vector{MDPState}
 
@@ -49,6 +50,11 @@ struct MDMA_Grid
         discretize_tilt(tilt_divisions)
         discretize_zoom(zoom_divisions)
         x = new(width, height, camera_positions, pan_divisions, tilt_divisions, zoom_divisions, horizon, get_states(camera_positions, pan_divisions, tilt_divisions, zoom_divisions, horizon))
+        x
+    end
+
+    function MDMA_Grid(grid::MDMA_Grid, horizon)
+        x = new(grid.width, grid.height, grid.camera_positions, grid.pan_divisions, grid.tilt_divisions, grid.zoom_divisions, horizon, get_states(grid.camera_positions, grid.pan_divisions, grid.tilt_divisions, grid.zoom_divisions, horizon))
         x
     end
 end
