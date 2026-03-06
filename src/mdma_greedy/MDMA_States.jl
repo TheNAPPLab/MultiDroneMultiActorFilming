@@ -26,12 +26,12 @@ end
 struct PinholeCameraModel
     intrinsics::Matrix{Float64}
     extrinsics::Matrix{Float64}
-    resolution::Vector{Float64}
+    resolution::Vector{Int64}
     fov::Float64
     cutoff::Float64
     function PinholeCameraModel(
         focal_length::Float64, # In mm
-        resolution::Vector{Float64},
+        resolution::Vector{Int64},
         lens_dim::Vector{Float64}, # In mm
         pitch::Float64,
         cutoff::Float64,
@@ -70,27 +70,30 @@ pan_angles = Vector{Float64}(undef, 0) # In radians
 tilt_angles = Vector{Float64}(undef, 0) # In radians
 zoom_vals = Vector{Float64}(undef, 0) # x1, x2, etc
 
-function discretize_pan(n::Int64)
+function discretize_pan(n::Int64, min_pan::Number, max_pan::Number)
     global pan_angles = Vector{Float64}(undef, n)
+    # Convert degrees to radians
+    min_pan = min_pan * pi / 180
+    max_pan = max_pan * pi / 180
+    increment = (max_pan - min_pan) / n
     for i = 0:(n-1)
-        pan_angles[i+1] = i * 2 * pi / n
+        pan_angles[i+1] = min_pan + (i * increment)
     end
 end
 
-function discretize_tilt(n::Int64)
+function discretize_tilt(n::Int64, min_tilt::Number, max_tilt::Number)
     global tilt_angles = Vector{Float64}(undef, n)
-    min_tilt = -pi/2
-    max_tilt = pi/2
+    # Convert degrees to radians
+    min_tilt = min_tilt * pi / 180
+    max_tilt = max_tilt * pi / 180
     increment = (max_tilt - min_tilt) / (n-1)
     for i = 0:(n-1)
         tilt_angles[i+1] = min_tilt + (i * increment)
     end
 end
 
-function discretize_zoom(n::Int64)
+function discretize_zoom(n::Int64, min_zoom::Number, max_zoom::Number)
     global zoom_vals = Vector{Float64}(undef, n)
-    min_zoom = 1.0
-    max_zoom = 3.0
     increment = (max_zoom - min_zoom) / (n-1)
     for i = 0:(n-1)
         zoom_vals[i+1] = min_zoom + (i * increment)

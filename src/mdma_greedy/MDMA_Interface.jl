@@ -11,11 +11,8 @@ export configs_from_file, save_solution, load_solution, targets_from_file
 function configs_from_file(
     filename::String,
     experiment_name::String,
-    move_dist::Number,
-    camera_positions::Vector{Tuple{Float64,Float64,Float64}},
-    pan_divisions::Int64,
-    tilt_divisions::Int64,
-    zoom_divisions::Int64
+    ptz_data::String,
+    cutoff::Number
 )::MultiDroneMultiActorConfigs
 
     json_string = read(filename, String)
@@ -28,7 +25,7 @@ function configs_from_file(
     num_targets = json_root["num_targets"]
     robot_fovs = json_root["robot_fovs"]
     num_robots = json_root["num_robots"]
-    sense_dist = json_root["sense_dist"]
+    sense_dist = Float64(cutoff)
 
     target_trajectories = Array{Target,2}(undef, horizon, num_targets)
     for (time, target_set) in enumerate(json_root["actor_positions"])
@@ -45,11 +42,38 @@ function configs_from_file(
         target_trajectories[time, :] = target_row
     end
 
+    # Get data for PTZ cameras
+    json_string = read(ptz_data, String)
+    json_root = JSON3.read(json_string)
+
+    camera_data = json_root["camera_data"]
+    positions = camera_data["positions"]
+    pan_divisions = camera_data["pan_divisions"]
+    tilt_divisions = camera_data["tilt_divisions"]
+    zoom_divisions = camera_data["zoom_divisions"]
+    pinhole_params = json_root["pinhole_params"]
+    focal_length = pinhole_params["focal_length"]
+    resolution = pinhole_params["resolution"]
+    lens_dim = pinhole_params["lens_dim"]
+    ptz_limits = json_root["ptz_limits"]
+    pan = ptz_limits["pan"]
+    tilt = ptz_limits["tilt"]
+    zoom = ptz_limits["zoom"]
+
+    # Convert camera positions to tuples
+    camera_positions = Tuple{Float64,Float64,Float64}[]
+    for cam in positions
+        push!(camera_positions, (cam[1], cam[2], cam[3]))
+    end
+
+    # Discretize pan, tilt, zoom
+    discretize_pan(pan_divisions, pan[1], pan[2])
+    discretize_tilt(tilt_divisions, tilt[1], tilt[2])
+    discretize_zoom(zoom_divisions, zoom[1], zoom[2])
 
     # Making the object
     grid = MDMA_Grid(Int64(scale["x"]), Int64(scale["y"]), camera_positions, pan_divisions, tilt_divisions, zoom_divisions, horizon)
-    fov = robot_fovs[1]
-    sensor = PinholeCameraModel(4.4, [1920.0, 1080.0], [5.60, 3.15], 0.0, Float64(sense_dist))
+    sensor = PinholeCameraModel(focal_length, [resolution[1], resolution[2]], [lens_dim[1], lens_dim[2]], 0.0, Float64(sense_dist))
 
     return MultiDroneMultiActorConfigs(
         experiment_name = experiment_name,
@@ -58,7 +82,7 @@ function configs_from_file(
         grid = grid,
         sensor = sensor,
         horizon = horizon,
-        move_dist = move_dist,
+        move_dist = 0.0,
     )
 
 end
@@ -129,7 +153,7 @@ function load_solution(filename)
             depth = states["depth"]
             horizon = states["horizon"]
             state =
-                PTZState(state_dict["x"], state_dict["y"], state_dict["z"], Symbol(state_dict["heading"]), 0, 0)
+                PTZState(Float64(state_dict["x"]), Float64(state_dict["y"]), Float64(state_dict["z"]), Float64(state_dict["pan"]), Float64(state_dict["tilt"]), Float64(state_dict["zoom"]))
             push!(robot_states, MDPState(state, depth, horizon))
         end
         push!(elements, (robot_id, robot_states))

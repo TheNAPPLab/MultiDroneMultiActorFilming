@@ -1,9 +1,10 @@
 # This file contains shared type aliases between Multi Agent and Single Agent Code
 
+import JSON3
 using Random
 
 export CoverageData
-export Trajectory, MDPState, State, Sensor, MDMA_Grid, random_state
+export Trajectory, MDPState, State, Sensor, MDMA_Grid, random_state, init_ptz_states
 # This is a 2D array since the rows represent timestamps For example this is
 # what the data looks like if you have a 4 timestep scene in which 0 means not
 # covered and 1 means covered
@@ -46,9 +47,6 @@ struct MDMA_Grid
 
     # We will precompute some of the large objects that we use frequently
     function MDMA_Grid(width, height, camera_positions, pan_divisions, tilt_divisions, zoom_divisions, horizon)
-        discretize_pan(pan_divisions)
-        discretize_tilt(tilt_divisions)
-        discretize_zoom(zoom_divisions)
         x = new(width, height, camera_positions, pan_divisions, tilt_divisions, zoom_divisions, horizon, get_states(camera_positions, pan_divisions, tilt_divisions, zoom_divisions, horizon))
         x
     end
@@ -66,4 +64,27 @@ function random_state(horizon, grid::MDMA_Grid)::MDPState
     depth = 1
 
     MDPState(PTZState(rwidth, rheight, 0.0, rdir, 0.0 ,0.0), horizon)
+end
+
+function init_ptz_states(ptz_data::String, grid::MDMA_Grid)::Vector{MDPState}
+    # Get data for PTZ cameras
+    json_string = read(ptz_data, String)
+    json_root = JSON3.read(json_string)
+    camera_data = json_root["camera_data"]
+    initial_ptz = camera_data["initial_ptz"]
+
+    # Convert initial PTZ values into floats
+    ptz = Tuple{Float64, Float64, Float64}[]
+    for cam in initial_ptz
+        push!(ptz, (cam[1], cam[2], cam[3]))
+    end
+
+    # Get all initial MDPStates
+    positions = grid.camera_positions
+    states = MDPState[]
+    for i in eachindex(initial_ptz)
+        push!(states, MDPState(PTZState(positions[i][1], positions[i][2], positions[i][3], ptz[i][1], ptz[i][2], ptz[i][3]), grid.horizon))
+    end
+
+    return states
 end

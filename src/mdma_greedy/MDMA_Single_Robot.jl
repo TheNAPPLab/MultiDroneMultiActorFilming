@@ -365,15 +365,19 @@ function generate_target_trajectories(
 end
 
 @testset "single_robot_planner" begin
-    sensor = PinholeCameraModel(4.4, [1920.0, 1080.0], [5.60, 3.15], 0.0, 3.0)
+    sensor = PinholeCameraModel(4.4, [1920, 1080], [5.60, 3.15], 0.0, 3.0)
     targets = Vector{Target}(undef, 0)
     push!(targets, Target(1, 2, 0, 1))
     push!(targets, Target(1, 3, 0, 2))
     push!(targets, Target(2, 3, 0, 3))
 
+    discretize_pan(3, 0, 360)
+    discretize_tilt(3, -90, 90)
+    discretize_zoom(3, 1, 3)
+
     camera_positions = [(0.0, 0.0, 0.0)]
     horizon = 4
-    grid = MDMA_Grid(20, 20, camera_positions, 8, 8, 8, horizon)
+    grid = MDMA_Grid(20, 20, camera_positions, 3, 3, 3, horizon)
 
     # initial_state = MDPState(UAVState(0,0,:S))
     # traj = generate_target_trajectories(grid, horizon, targets)
