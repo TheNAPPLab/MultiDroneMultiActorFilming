@@ -175,11 +175,11 @@ function compute_prior_coverage(
 
     # If a target is detected by at least one robot it is covered
     # loop over each trajectory and compute detections. Is that really the best?
-    for current_robot_trajectory in trajectories
+    for (index, current_robot_trajectory) in enumerate(trajectories)
         for time = 1:configs.horizon
             robot_state = current_robot_trajectory[time]
             for (target_idx, target) in enumerate(target_traj[time, :])
-                if detectTarget(robot_state.state, target, configs.sensor)
+                if detectTarget(robot_state.state, target, configs.grid.pinhole_cameras[index])
                     for (f_idx, face) in enumerate(target.faces)
                         distance = (
                             face.pos[1] - robot_state.state.x,
@@ -254,7 +254,8 @@ function solve_block(
     # TODO coverage should be coming of of multirobot problem
     single_problem = SingleRobotMultiTargetViewCoverageProblem(
         configs.grid,
-        configs.sensor,
+        block,
+        configs.grid.pinhole_cameras[block],
         configs.horizon,
         configs.target_trajectories,
         Int64(configs.move_dist),
@@ -296,7 +297,8 @@ function objective(p::MultiRobotTargetCoverageProblem, X)::Float64
         for state in robot_trajectory
             single_problem = SingleRobotMultiTargetViewCoverageProblem(
                 configs.grid,
-                configs.sensor,
+                robot_id,
+                configs.grid.pinhole_cameras[robot_id],
                 configs.horizon,
                 configs.target_trajectories,
                 Int64(configs.move_dist),

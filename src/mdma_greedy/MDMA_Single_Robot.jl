@@ -54,6 +54,7 @@ abstract type AbstractSingleRobotProblem <: MDP{MDPState,MDPState} end
 
 mutable struct SingleRobotMultiTargetViewCoverageProblem <: AbstractSingleRobotProblem
     grid::MDMA_Grid
+    index::Int64
     sensor::Camera
     horizon::Int64
     target_trajectories::Array{Target,2}
@@ -65,6 +66,7 @@ mutable struct SingleRobotMultiTargetViewCoverageProblem <: AbstractSingleRobotP
 
     function SingleRobotMultiTargetViewCoverageProblem(
         grid::MDMA_Grid,
+        index::Int64,
         sensor::Camera,
         horizon::Integer,
         target_trajectories::Array{Target,2},
@@ -75,7 +77,8 @@ mutable struct SingleRobotMultiTargetViewCoverageProblem <: AbstractSingleRobotP
 
         this = new(
             grid,
-            sensor,
+            index,
+            grid.pinhole_cameras[index],
             horizon,
             target_trajectories,
             move_dist,
@@ -130,7 +133,7 @@ function compute_single_agent_view_reward(
     for (target_id, t) in enumerate(targets)
         # Pixel density by face should be stored
         target_coverage = coverage_data[time, target_id, :]
-        if detectTarget(mdp_state.state, t, model.sensor)
+        if detectTarget(mdp_state.state, t, model.grid.pinhole_cameras[model.index])
             # print("\Target detected ", t.x, " ", t.y, " ", mdp_state.state.x, " ", mdp_state.state.y)
             # println()
             # println("Robot Heading $(mdp_state.state.heading)")
@@ -147,8 +150,9 @@ function compute_single_agent_view_reward(
                     face.pos[2] - mdp_state.state.y,
                     -target_height / 2 + mdp_state.state.z,
                 )
-                pan = (2 * pi) - mdp_state.state.pan
-                tilt = mdp_state.state.tilt
+                # pan = (2 * pi) - mdp_state.state.pan - model.grid.pinhole_cameras[model.index].pan_offset
+                pan = -mdp_state.state.pan - model.grid.pinhole_cameras[model.index].pan_offset
+                tilt = mdp_state.state.tilt + model.grid.pinhole_cameras[model.index].tilt_offset
                 zoom = mdp_state.state.zoom
 
                 heading = (cos(pan)*cos(tilt), sin(pan)*cos(tilt), -sin(tilt))
@@ -365,7 +369,7 @@ function generate_target_trajectories(
 end
 
 @testset "single_robot_planner" begin
-    sensor = PinholeCameraModel(4.4, [1920, 1080], [5.60, 3.15], 0.0, 3.0)
+    sensor = PinholeCameraModel(4.4, [1920, 1080], [5.60, 3.15], 3.0)
     targets = Vector{Target}(undef, 0)
     push!(targets, Target(1, 2, 0, 1))
     push!(targets, Target(1, 3, 0, 2))
@@ -377,7 +381,7 @@ end
 
     camera_positions = [(0.0, 0.0, 0.0)]
     horizon = 4
-    grid = MDMA_Grid(20, 20, camera_positions, 3, 3, 3, horizon)
+    grid = MDMA_Grid(20, 20, camera_positions, [sensor], 3, 3, 3, horizon)
 
     # initial_state = MDPState(UAVState(0,0,:S))
     # traj = generate_target_trajectories(grid, horizon, targets)

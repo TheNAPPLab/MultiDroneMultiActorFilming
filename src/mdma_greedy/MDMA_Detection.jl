@@ -171,12 +171,8 @@ function detectTarget(dstate::PTZState, astate::Target, sensor::ViewConeSensor):
 end
 
 function detectTarget(dstate::PTZState, astate::Target, camera::PinholeCameraModel)::Bool
-    rel_target_pos = [astate.x - dstate.x;
-                      astate.y - dstate.y; 
-                      -target_height + dstate.z;
-                      1]
-    pan = dstate.pan - (2 * pi)
-    tilt = -dstate.tilt
+    pan = dstate.pan + camera.pan_offset
+    tilt = -dstate.tilt - camera.tilt_offset
     zoom = dstate.zoom
     pan_rotation = [cos(pan) -sin(pan) 0; sin(pan) cos(pan) 0; 0 0 1]
     tilt_rotation = [cos(tilt) 0 sin(tilt); 0 1 0; -sin(tilt) 0 cos(tilt)]

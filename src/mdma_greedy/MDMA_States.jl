@@ -29,12 +29,15 @@ struct PinholeCameraModel
     resolution::Vector{Int64}
     fov::Float64
     cutoff::Float64
+    pan_offset::Float64 # In radians
+    tilt_offset::Float64 # In radians
     function PinholeCameraModel(
         focal_length::Float64, # In mm
         resolution::Vector{Int64},
         lens_dim::Vector{Float64}, # In mm
-        pitch::Float64,
         cutoff::Float64,
+        pan::Float64 = 0.0,
+        tilt::Float64 = 0.0
     )
         # world units to pixel units
         fx = focal_length * resolution[1] / lens_dim[1]
@@ -50,12 +53,12 @@ struct PinholeCameraModel
         # then from drone to camera coordinate
         # Drone -> camera redifine the axis
         # Rotation on y axis
-        extrinsics = [0 1 0; 0 0 1; 1 0 0] * [cos(pitch) 0 sin(pitch); 0 1 0; -sin(pitch) 0 cos(pitch)]
+        extrinsics = [0 1 0; 0 0 1; 1 0 0]
 
         fov = 2 * atan(resolution[1], 2 * fx)
         println("PinholeCameraModel Used")
         println("1x Zoom Fov: $(fov)")
-        return new(intrinsics, extrinsics, resolution, fov, cutoff)
+        return new(intrinsics, extrinsics, resolution, fov, cutoff, pan, tilt)
     end
 end
 

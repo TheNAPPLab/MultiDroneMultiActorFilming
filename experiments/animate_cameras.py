@@ -18,6 +18,7 @@ def main():
     # Get correct location
     fname = bpy.path.basename(bpy.context.blend_data.filepath)
     path = bpy.data.filepath[: -len(fname)]
+    experiment = fname.removesuffix(".blend")
     os.chdir(path)
 
     # Animate and render for each planner
@@ -28,6 +29,10 @@ def main():
         solution_dict = {}
         with open(f"{planner}/solution.json", "r") as f:
             solution_dict = json.load(f)
+
+        ptz_dict = {}
+        with open(f"{experiment}_ptz_data.json", "r") as f:
+            ptz_dict = json.load(f)
 
         bpy.ops.object.select_all(action="DESELECT")
         # Find cameras
@@ -56,16 +61,25 @@ def main():
             for idx, camera in enumerate(bpy.context.selected_objects):
                 x = solution_dict["elements"][idx][1][t]["state"]["x"]
                 y = solution_dict["elements"][idx][1][t]["state"]["y"]
-                h = solution_dict["elements"][idx][1][t]["state"]["heading"]
-                angle_z = heading_angles[h] - PI / 2.0
-                camera.location.x = x
+                z = solution_dict["elements"][idx][1][t]["state"]["z"]
+                pan = solution_dict["elements"][idx][1][t]["state"]["pan"]
+                tilt = solution_dict["elements"][idx][1][t]["state"]["tilt"]
+                zoom = solution_dict["elements"][idx][1][t]["state"]["zoom"]
+                pan_offset = ptz_dict["camera_data"]["pt_offset"][idx][0]
+                tilt_offset = ptz_dict["camera_data"]["pt_offset"][idx][1]
+                angle_z = pan + pan_offset + PI / 2
+                angle_x = tilt + tilt_offset + PI / 2
+                focal_length = zoom * 29.5292
+                camera.location.x = 30 - x
                 camera.location.y = y
-                camera.location.z = 5.0
+                camera.location.z = z
                 camera.rotation_euler.z = angle_z
-                camera.rotation_euler.x = PI / 2.0 - 0.3490655
+                camera.rotation_euler.x = angle_x
                 camera.rotation_euler.y = 0.0
+                camera.data.lens = focal_length
                 camera.keyframe_insert(data_path="location", frame=t)
                 camera.keyframe_insert(data_path="rotation_euler", frame=t)
+                camera.data.keyframe_insert(data_path="lens", frame=t)
 
         # Render out each camera
         for camera_name in camera_names:
@@ -77,8 +91,8 @@ def main():
             # Set render settings directly
             scene.render.filepath = render_path
             scene.render.use_compositing = False
-            scene.render.resolution_x = 3840
-            scene.render.resolution_y = 2160
+            scene.render.resolution_x = 1920
+            scene.render.resolution_y = 1080
             scene.render.resolution_percentage = 5
             scene.render.image_settings.file_format = "PNG"
             scene.render.image_settings.color_depth = "16"

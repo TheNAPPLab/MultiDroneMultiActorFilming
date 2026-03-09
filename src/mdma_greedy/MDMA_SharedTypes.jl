@@ -39,6 +39,7 @@ struct MDMA_Grid
     width::Int64
     height::Int64
     camera_positions::Vector{Tuple{Float64,Float64,Float64}}
+    pinhole_cameras::Vector{PinholeCameraModel}
     pan_divisions::Int64
     tilt_divisions::Int64
     zoom_divisions::Int64
@@ -46,13 +47,13 @@ struct MDMA_Grid
     states::Array{MDPState,5}
 
     # We will precompute some of the large objects that we use frequently
-    function MDMA_Grid(width, height, camera_positions, pan_divisions, tilt_divisions, zoom_divisions, horizon)
-        x = new(width, height, camera_positions, pan_divisions, tilt_divisions, zoom_divisions, horizon, get_states(camera_positions, pan_divisions, tilt_divisions, zoom_divisions, horizon))
+    function MDMA_Grid(width, height, camera_positions, pinhole_cameras, pan_divisions, tilt_divisions, zoom_divisions, horizon)
+        x = new(width, height, camera_positions, pinhole_cameras, pan_divisions, tilt_divisions, zoom_divisions, horizon, get_states(camera_positions, pan_divisions, tilt_divisions, zoom_divisions, horizon))
         x
     end
 
     function MDMA_Grid(grid::MDMA_Grid, horizon)
-        x = new(grid.width, grid.height, grid.camera_positions, grid.pan_divisions, grid.tilt_divisions, grid.zoom_divisions, horizon, get_states(grid.camera_positions, grid.pan_divisions, grid.tilt_divisions, grid.zoom_divisions, horizon))
+        x = new(grid.width, grid.height, grid.camera_positions, grid.pinhole_cameras, grid.pan_divisions, grid.tilt_divisions, grid.zoom_divisions, horizon, get_states(grid.camera_positions, grid.pan_divisions, grid.tilt_divisions, grid.zoom_divisions, horizon))
         x
     end
 end

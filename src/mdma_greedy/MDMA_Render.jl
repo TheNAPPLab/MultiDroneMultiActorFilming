@@ -98,7 +98,9 @@ function draw_state(cr::CairoContext, state::PTZState, model, ppm, fade, cfade, 
     move_to(cr, state.x * ppm + buf * ppm, state.y * ppm + buf * ppm)
     fov = 2 * atan(model.sensor.resolution[1], 2 * model.sensor.intrinsics[1,1] * state.zoom)
     radius = model.sensor.cutoff
-    draw_arc(cr, radius, state.x, state.y, state.pan, fov, ppm, fade, cfade, buf)
+    index = findfirst(x -> x == (state.x, state.y, state.z), model.grid.camera_positions)
+    pan = state.pan + model.grid.pinhole_cameras[index].pan_offset
+    draw_arc(cr, radius, state.x, state.y, pan, fov, ppm, fade, cfade, buf)
     restore(cr)
 end
 
