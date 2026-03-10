@@ -296,7 +296,7 @@ function POMDPs.reward(
     end
 
     if (action.state.zoom == state.state.zoom)
-        reward += 0.05
+        reward += 0.07
     end
 
     reward

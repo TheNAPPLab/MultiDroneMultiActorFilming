@@ -23,16 +23,6 @@ function ccw(d::Symbol)::Symbol
     end
 end
 
-function ccw(p::Float64)::Float64
-    p in pan_angles || throw(ArgumentError("invalid pan: $p"))
-    index = findfirst(isequal(p), pan_angles)
-    if (index == length(pan_angles))
-        pan_angles[1]
-    else
-        pan_angles[index+1]
-    end
-end
-
 function cw(d::Symbol)::Symbol
     d in cardinaldir || throw(ArgumentError("invalid cardinaldir: $d"))
     if (d == :E)
@@ -54,11 +44,21 @@ function cw(d::Symbol)::Symbol
     end
 end
 
+function ccw(p::Float64)::Float64
+    p in pan_angles || throw(ArgumentError("invalid pan: $p"))
+    index = findfirst(isequal(p), pan_angles)
+    if (index == length(pan_angles))
+        p
+    else
+        pan_angles[index+1]
+    end
+end
+
 function cw(p::Float64)::Float64
     p in pan_angles || throw(ArgumentError("invalid pan: $p"))
     index = findfirst(isequal(p), pan_angles)
     if (index == 1)
-        pan_angles[length(pan_angles)]
+        p
     else
         pan_angles[index-1]
     end

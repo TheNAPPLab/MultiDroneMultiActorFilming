@@ -78,7 +78,7 @@ function discretize_pan(n::Int64, min_pan::Number, max_pan::Number)
     # Convert degrees to radians
     min_pan = min_pan * pi / 180
     max_pan = max_pan * pi / 180
-    increment = (max_pan - min_pan) / n
+    increment = (max_pan - min_pan) / (n-1)
     for i = 0:(n-1)
         pan_angles[i+1] = min_pan + (i * increment)
     end
