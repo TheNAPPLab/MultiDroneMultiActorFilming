@@ -12,7 +12,8 @@ export get_states,
     SingleRobotMultiTargetViewCoverageProblem,
     solve_single_robot,
     compute_path,
-    reward
+    reward,
+    compute_alpha
 
 ##################################################
 ## Override function solve_single_robot         ##
@@ -115,10 +116,8 @@ function load_cached_reward(
     # model.view_reward_cache[stateindex(state)]
 end
 
-function compute_alpha(model::SingleRobotMultiTargetViewCoverageProblem, zoom::Float64)
-    fx = model.sensor.intrinsics[1, 1] * zoom
-    fy = model.sensor.intrinsics[2, 2] * zoom
-    alpha = (fx * fy) / (model.sensor.intrinsics[1, 1] * model.sensor.intrinsics[2, 2])
+function compute_alpha(camera::PinholeCameraModel, zoom::Float64)
+    alpha = camera.intrinsics[1, 1] * camera.intrinsics[2, 2] * zoom * zoom
 end
 
 function compute_single_agent_view_reward(
@@ -158,7 +157,7 @@ function compute_single_agent_view_reward(
                 heading = (cos(pan)*cos(tilt), sin(pan)*cos(tilt), -sin(tilt))
 
                 # Includes the sum
-                alpha = compute_alpha(model, zoom)
+                alpha = compute_alpha(model.grid.pinhole_cameras[model.index], zoom)
                 cumulative_face_coverage = prior_face_coverage + 
                     compute_camera_coverage(face, heading, distance, alpha)
 
@@ -288,15 +287,15 @@ function POMDPs.reward(
     reward = load_cached_reward(model, action)
 
     if (action.state.pan == state.state.pan)
-        reward += 0.1
+        reward += 12.0
     end
 
     if (action.state.tilt == state.state.tilt)
-        reward += 0.02
+        reward += 5.0
     end
 
     if (action.state.zoom == state.state.zoom)
-        reward += 0.07
+        reward += 10.0
     end
 
     reward
