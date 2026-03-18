@@ -38,6 +38,35 @@ function target_centroid(targets::Vector{Target})::Tuple{AbstractFloat,AbstractF
     centroid
 end
 
+function snap_to_nearest(value::Float64, valid_values::Vector{Float64})::Float64
+    # Wrap value into [0, 2π) if the array covers that range (i.e. pan)
+    # then find closest valid discretized value
+    best = valid_values[1]
+    best_d = abs(value - best)
+    for v in valid_values
+        d = abs(value - v)
+        if d < best_d
+            best = v
+            best_d = d
+        end
+    end
+    best
+end
+
+function snap_pan(angle::Float64)::Float64
+    # Normalise to [0, 2π) first
+    a = mod(angle, 2π)
+    snap_to_nearest(a, pan_angles)
+end
+
+function snap_tilt(angle::Float64)::Float64
+    snap_to_nearest(clamp(angle, -π/2, π/2), tilt_angles)
+end
+
+function snap_zoom(z::Float64)::Float64
+    snap_to_nearest(z, zoom_vals)
+end
+
 function heading_from_angle(angle::AbstractFloat)::Symbol
     # Duplicated each to make the math below easier
     symbols = [
@@ -96,7 +125,7 @@ function place_uavs(
     for _ = 1:config.num_robots
         x = radius * cos(theta + config.initial_angle) + centroid[1]
         y = radius * sin(theta + config.initial_angle) + centroid[2]
-        u_state = PTZState(x, y, 0.0, Symbol(:E), 0.0, 0.0)
+        u_state = PTZState(x, y, 0.0, snap_pan(theta + config.initial_angle), snap_tilt(0.0), snap_zoom(1.0))
         state = MDPState(u_state, time, config.horizon)
         push!(output_states, align_nearest(state, targets))
         theta += dtheta
@@ -116,7 +145,7 @@ function align_nearest(state::MDPState, targets::Vector{Target})::MDPState
             angle = absoluteAngle(dx, dy)
         end
     end
-    u_state = PTZState(state.state.x, state.state.y, state.state.z, heading_from_angle(angle), 0.0, 0.0)
+    u_state = PTZState(state.state.x, state.state.y, state.state.z, snap_pan(angle), snap_tilt(0.0), snap_zoom(1.0))
     MDPState(u_state, state.depth, state.horizon)
 end
 

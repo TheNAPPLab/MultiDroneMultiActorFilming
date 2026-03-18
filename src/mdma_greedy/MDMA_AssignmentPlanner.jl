@@ -25,10 +25,17 @@ function MultiRobotTargetAssignmentProblem(robot_states::Vector{MDPState}, kwarg
 end
 
 function compute_assignments(robot_id, num_targets, num_robots)
-    width = (num_targets / num_robots) < 1 ? 1 : Integer(floor(num_targets / num_robots))
-    offset = (width * (robot_id - 1)) + 1
+    base_width = div(num_targets, num_robots)
+    extra = mod(num_targets, num_robots)
+
+    width = base_width + (robot_id <= extra ? 1 : 0)
+    offset = ((robot_id - 1) * base_width) + min(robot_id - 1, extra) + 1
+
     assignments = fill(false, (1, num_targets))
-    assignments[offset:offset+width-1] = fill(true, (1, width))
+    upper = min(offset + width - 1, num_targets)
+    if offset <= num_targets && offset <= upper
+        assignments[offset:upper] = fill(true, (1, upper - offset + 1))
+    end
     return assignments
 end
 
@@ -41,11 +48,7 @@ end
 #  - num_targets/num_robots > 1.0 
 #  - In this case I'll just wrap the assignments
 function get_assignments(robot_id::Integer, num_targets::Integer, num_robots::Integer)
-    if (num_targets % num_robots != 0)
-        return compute_assignments(robot_id % num_targets + 1, num_targets, num_robots)
-    else
-        return compute_assignments(robot_id, num_targets, num_robots)
-    end
+    return compute_assignments(robot_id, num_targets, num_robots)
 end
 
 function solve_block(
@@ -134,7 +137,7 @@ mutable struct SingleRobotTargetAssignmentProblem <: AbstractSingleRobotProblem
     move_dist::Int64
     assignments::Vector{Bool}
     initial_state::MDPState
-    view_reward_cache::Array{Float64,3}
+    view_reward_cache::Array{Float64,5}
     function SingleRobotTargetAssignmentProblem(
         grid::MDMA_Grid,
         sensor::Camera,
@@ -153,7 +156,7 @@ mutable struct SingleRobotTargetAssignmentProblem <: AbstractSingleRobotProblem
             move_dist,
             assignments,
             initial_state,
-            zeros(Float64, 0, 0, 0)
+            zeros(Float64, 0, 0, 0, 0, 0)
         )
         this.view_reward_cache = initialize_reward_cache_assignment(this)
         this
@@ -169,7 +172,7 @@ function POMDPs.reward(
     action::MDPState,
 )
     reward = load_cached_reward_assignment(model, action)
-    if (action.state.heading == state.state.heading)
+    if (action.state.pan == state.state.pan)
         reward += 0.02
     end
 
@@ -180,7 +183,7 @@ function POMDPs.reward(
     reward
 end
 
-function initialize_reward_cache_assignment(this)::Array{Float64, 3}
+function initialize_reward_cache_assignment(this)::Array{Float64, 5}
     states = get_states(this)
 
     map(x -> compute_single_agent_view_reward_assignment(this, x), states)
@@ -192,7 +195,9 @@ function load_cached_reward_assignment(
         state::MDPState)
 
     model.view_reward_cache[findfirst(x -> x == (state.state.x, state.state.y, state.state.z), model.grid.camera_positions),
-                            dir_to_index(state.state.heading),
+                            dir_to_index(state.state.pan, pan_angles),
+                            dir_to_index(state.state.tilt, tilt_angles),
+                            dir_to_index(state.state.zoom, zoom_vals),
                             state.depth
                            ]
     # model.view_reward_cache[stateindex(state)]
@@ -213,7 +218,7 @@ function compute_single_agent_view_reward_assignment(
             if detectTarget(mdp_state.state, t, model.sensor)
                 # print("\Target detected ", t.x, " ", t.y, " ", mdp_state.state.x, " ", mdp_state.state.y)
                 # println()
-                # println("Robot Heading $(mdp_state.state.heading)")
+                # println("Robot Pan $(mdp_state.state.pan)")
                 for (f_id, face) in enumerate(t.faces)
                     face_normal = face.normal
 
@@ -226,7 +231,7 @@ function compute_single_agent_view_reward_assignment(
                         face.pos[2] - mdp_state.state.y,
                         target_height / 2 - mdp_state.state.z,
                     )
-                    theta = dirAngle(mdp_state.state.heading)
+                    theta = mdp_state.state.pan
                     heading = (cos(theta), sin(theta), 0.0)
 
                     # Includes the sum

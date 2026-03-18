@@ -41,7 +41,7 @@ function init_discrete_problem(
     # pitch = -0.3490655 # if you change this also change animate_cameras.py
     cutoff = 100.0
     # sensor = MDMA.PinholeCameraModel(focal_length, resolution, lens_dim, 0.0, pitch, cutoff)
-    sensor = MDMA.PinholeCameraModel([1574.89111, 1613.1925], [1920.0, 1080.0], [923.75228, 564.05564], 0.0, 3.0)
+    sensor = MDMA.PinholeCameraModel(4.4, [1920.0, 1080.0], [5.60, 3.15], 0.0, cutoff)
     move_dist = 3
 
     multi_configs = configs_from_file(
@@ -135,7 +135,7 @@ function run_experiment(
     
     cutoff = 100.0
     # sensor = MDMA.PinholeCameraModel(focal_length, resolution, lens_dim, 0.0, pitch, cutoff)
-    sensor = MDMA.PinholeCameraModel([1574.89111, 1613.1925], [1920.0, 1080.0], [923.75228, 564.05564], 0.0, 3.0)
+    sensor = MDMA.PinholeCameraModel(4.4, [1920.0, 1080.0], [5.60, 3.15], 0.0, cutoff)
     move_dist = 3
 
     multi_configs = configs_from_file(

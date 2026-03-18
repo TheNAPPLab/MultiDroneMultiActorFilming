@@ -54,10 +54,10 @@ struct MDMA_Grid
 end
 
 function random_state(horizon, grid::MDMA_Grid)::MDPState
-    rwidth = rand(1:grid.width)
-    rheight = rand(1:grid.height)
-    rdir = rand(cardinaldir)
-    depth = 1
+    x, y, z = rand(grid.camera_positions)
+    rpan = rand(pan_angles)
+    rtilt = tilt_angles[ceil(Int, length(tilt_angles) / 2)]  # middle tilt
+    rzoom = zoom_vals[1]  # minimum zoom
 
-    MDPState(PTZState(rwidth, rheight, 0.0, rdir, 0.0 ,0.0), horizon)
+    MDPState(PTZState(x, y, z, rpan, rtilt, rzoom), horizon)
 end
