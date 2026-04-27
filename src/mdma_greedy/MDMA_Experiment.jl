@@ -7,10 +7,12 @@ using Base.Threads
 using DataFrames
 using CSV
 using Plots
+using Plots.PlotMeasures
+using Statistics
 
 export AssignmentPlanner, GreedyPlanner, FormationPlanner, MyopicPlanner, MultipleRoundsGreedyPlanner
 export run_all_experiments, ExperimentsConfig
-export blender_render_all_experiments, evaluate_all_experiments
+export blender_render_all_experiments, evaluate_all_experiments, evaluate_ptz_experiments, evaluate_ptz_actor_experiments
 
 struct GreedyPlanner end
 struct FormationPlanner end
@@ -41,7 +43,7 @@ function init_discrete_problem(
     # pitch = -0.3490655 # if you change this also change animate_cameras.py
     cutoff = 100.0
     # sensor = MDMA.PinholeCameraModel(focal_length, resolution, lens_dim, 0.0, pitch, cutoff)
-    sensor = MDMA.PinholeCameraModel([1574.89111, 1613.1925], [1920.0, 1080.0], [923.75228, 564.05564], 0.0, 3.0)
+    sensor = MDMA.PinholeCameraModel([1574.89111, 1613.1925], [1920, 1080], [923.75228, 564.05564], 3.0)
     move_dist = 3
 
     multi_configs = configs_from_file(
@@ -135,7 +137,7 @@ function run_experiment(
     
     cutoff = 100.0
     # sensor = MDMA.PinholeCameraModel(focal_length, resolution, lens_dim, 0.0, pitch, cutoff)
-    sensor = MDMA.PinholeCameraModel([1574.89111, 1613.1925], [1920.0, 1080.0], [923.75228, 564.05564], 0.0, 3.0)
+    sensor = MDMA.PinholeCameraModel([1574.89111, 1613.1925], [1920, 1080], [923.75228, 564.05564], 3.0)
     move_dist = 3
 
     multi_configs = configs_from_file(
@@ -290,4 +292,96 @@ function save_plot(df::DataFrame, path::String, eval_kind::String, experiment_na
     title!(pl, "$(eval_kind) Evaluation for $(experiment_name)")
     savefig(pl, "$(path)/$(lowercase(eval_kind))_evaluation.tex")
     savefig(pl, "$(path)/$(lowercase(eval_kind))_evaluation.png")
+end
+
+function evaluate_ptz_experiments(config::ExperimentsConfig, solution_filenames::Vector{String}, solution_labels::Vector{String}, study::String)
+    for experiment in config.experiments
+        path = "$(config.path_to_experiments)/$(experiment)"
+
+        println("Path $(path)")
+        # Evaluate Experiments
+        println("Evaluating PPA for PTZ $(experiment)")
+        df_ppa = evaluate_ptz_solution(experiment, solution_filenames, solution_labels, config.path_to_experiments, study, PPAEvaluation())
+        CSV.write("$(path)/ppa_evaluation_$(study).csv", df_ppa)
+        save_plot(df_ppa, path, "PPA", experiment, solution_labels, "Time Step", "PPA Objective", study, 18mm, 6mm)
+        save_table(df_ppa, path, "ppa_evaluation_$(study)")
+
+        println("Evaluating Scene Coverage for PTZ $(experiment)")
+        df_ppa = evaluate_ptz_solution(experiment, solution_filenames, solution_labels, config.path_to_experiments, study, SceneCoverageEvaluation())
+        CSV.write("$(path)/scene_coverage_evaluation_$(study).csv", df_ppa)
+        save_plot(df_ppa, path, "Total Actors Covered", experiment, solution_labels, "Time Step", "Number of Actors", study, 6mm, 6mm)
+        save_table(df_ppa, path, "scene_coverage_evaluation_$(study)")
+
+        println("Experiment $(experiment) complete!")
+    end
+end
+
+function evaluate_ptz_actor_experiments(config::ExperimentsConfig, solution_filenames::Vector{String}, solution_labels::Vector{String}, study::String)
+    for experiment in config.experiments
+        path = "$(config.path_to_experiments)/$(experiment)"
+        for (i, solution_filename) in enumerate(solution_filenames)
+            # Get label names for plots
+            multi_configs =
+                configs_from_file("$(path)/$(experiment)_data.json", experiment, "$(path)/$(experiment)_ptz_data_$(study).json", 1000.0)
+            target_labels = String[]
+            for i in axes(multi_configs.target_trajectories, 2)
+                push!(target_labels, "Target $(i)")
+            end
+
+            println("Path $(path)")
+            # Evaluate Experiments
+            println("Evaluating Actor Coverage for PTZ $(experiment)")
+            df_coverage = evaluate_ptz_solution(experiment, solution_filename, config.path_to_experiments, study, ActorCoverageEvaluation())
+            CSV.write("$(path)/actor_coverage_evaluation_$(solution_labels[i])_$(study).csv", df_coverage)
+            save_plot(df_coverage, path, "Actor Coverage $(solution_labels[i])", experiment, target_labels, "Time Step", "Number of Cameras", "$(solution_labels[i])_$(study)", 6mm, 6mm)
+            save_table(df_coverage, path, "actor_coverage_evaluation_$(solution_labels[i])_$(study)")
+
+            println("Evaluating Actor PPA for PTZ $(experiment)")
+            df_ppa = evaluate_ptz_solution(experiment, solution_filename, config.path_to_experiments, study, ActorRewardEvaluation())
+            CSV.write("$(path)/actor_reward_evaluation_$(solution_labels[i])_$(study).csv", df_ppa)
+            save_plot(df_ppa, path, "Actor PPA", experiment, target_labels, "Time Step", "PPA Objective", "$(solution_labels[i])_$(study)", 12mm, 6mm)
+            save_table(df_ppa, path, "actor_reward_evaluation_$(solution_labels[i])_$(study)")
+        end
+        println("Experiment $(experiment) complete!")
+    end
+end
+
+function save_plot(df::DataFrame, path::String, eval_kind::String, experiment_name::String, solution_labels::Vector{String}, x_label::String, y_label::String, info::String, left_margin = 0mm, bottom_margin = 0mm)
+    pl = plot(left_margin=left_margin, bottom_margin=bottom_margin)
+    for sol in solution_labels
+        plot!(pl, df[!, :t], df[!, sol], label=sol)
+    end
+    xlabel!(pl, "$(x_label)")
+    ylabel!(pl, "$(y_label)")
+    title!(pl, "$(eval_kind) Evaluation for $(experiment_name)")
+    savefig(pl, "$(path)/$(lowercase(eval_kind))_evaluation_$(info).png")
+    savefig(pl, "$(path)/$(lowercase(eval_kind))_evaluation_$(info).pdf")
+end
+
+function save_plot(df::DataFrame, path::String, eval_kind::String, experiment_name::String, solution_labels::Vector{String}, info::String, left_margin = 0mm, bottom_margin = 0mm)
+    pl = plot(left_margin=left_margin, bottom_margin=bottom_margin)
+    for sol in solution_labels
+        plot!(pl, df[!, :t], df[!, sol], label=sol)
+    end
+    xlabel!(pl,"TimeStep")
+    ylabel!(pl, "Evaluation ($(eval_kind))")
+    title!(pl, "$(eval_kind) Evaluation for $(experiment_name)")
+    savefig(pl, "$(path)/$(lowercase(eval_kind))_evaluation_$(info).png")
+    savefig(pl, "$(path)/$(lowercase(eval_kind))_evaluation_$(info).pdf")
+end
+
+function save_table(df::DataFrame, path::String, eval_kind::String)
+    data_cols = df[:, 2:end] # Discard time step column
+    df_results = DataFrame(
+        Actor = names(data_cols),
+        Mean = mean.(eachcol(data_cols)),
+        Median = median.(eachcol(data_cols)),
+        SD = std.(eachcol(data_cols)),
+        Q1 = map(col -> quantile(col, 0.25), eachcol(data_cols)),
+        Q3 = map(col -> quantile(col, 0.75), eachcol(data_cols)),
+        Min = minimum.(eachcol(data_cols)),
+        Max = maximum.(eachcol(data_cols))
+    )
+    CSV.write("$(path)/$(eval_kind)_stats.csv", df_results)
+    println("$(path)/$(eval_kind)_stats.csv:\n$df_results\n")
 end
