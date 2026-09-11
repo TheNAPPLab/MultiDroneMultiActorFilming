@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-IFS=$'\n\t'
-
-cd $(dirname "$0")
-
-sudo docker build .. -t airlab 
-yes | sudo docker image prune || true
-
